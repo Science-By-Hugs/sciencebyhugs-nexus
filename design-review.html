@@ -1,0 +1,1189 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>NEXUS Design Review</title><link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/brand.css"><link rel="stylesheet" href="/src/avatar.css"><link rel="stylesheet" href="/src/marketing.css"><link rel="stylesheet" href="/src/minimal.css"><link rel="stylesheet" href="/src/orbit.css"><link rel="stylesheet" href="/src/fluid.css"><link rel="stylesheet" href="/src/refinement.css"><link rel="stylesheet" href="/src/appleSignIn.css"><link rel="stylesheet" href="/src/biometricUnlock.css"><link rel="stylesheet" href="/src/compact.css"><style>.review-controls{position:relative;z-index:10001;top:0;left:0;right:0;background:#172332;display:flex;flex-wrap:wrap;gap:6px;overflow:visible;padding:8px}.review-controls button{color:#edf2fa;background:#263247;border:0;border-radius:8px;font:12px system-ui;padding:8px 10px;white-space:nowrap}body{padding-top:0}.review-label{font:10px system-ui;color:#a0afc4;text-align:center;padding:6px}#app #signedOutView .apple-signin-button:disabled{opacity:1}</style><link rel="stylesheet" href="/src/authRedesign.css"></head><body class="native-app"><nav class="review-controls" aria-label="Preview screens"><button type="button" data-preview="Home">Home</button><button type="button" data-preview="Home signed out">Home signed out</button><button type="button" data-preview="Catalog">Catalog</button><button type="button" data-preview="Sign in">Sign in</button><button type="button" data-preview="Apple profile">Apple profile</button><button type="button" data-preview="Account">Account</button><button type="button" data-preview="Orders">Orders</button><button type="button" data-preview="Cart">Cart</button><button type="button" data-preview="Product">Product</button><button type="button" data-preview="Menu">Menu</button><button type="button" data-preview="Manage">Manage Account</button><button type="button" data-preview="Membership">Membership</button><button type="button" data-preview="Referrals">Referrals</button><button type="button" data-preview="Support">Support</button><button type="button" data-preview="Policies">Policies</button></nav><div class="review-label">DESIGN PREVIEW · FICTIONAL DATA · NO ACCOUNT ACTIONS</div><div id="app">
+  <section id="entryGate" class="entry-gate" aria-labelledby="entryGateTitle" style="--entry-vial:url('/science-by-hugs-vial-v3.png')" >
+    <div class="entry-gate-backdrop" aria-hidden="true"></div>
+    <div class="entry-gate-card">
+      <span class="entry-gate-logo minimal-wordmark" aria-label="Nexus">nexus<b class="wordmark-dot">.</b></span>
+      <div class="entry-gate-atom" aria-hidden="true">⚛</div>
+      <span class="entry-gate-kicker">RESEARCH ACCESS CONFIRMATION</span>
+      <h1 id="entryGateTitle">Before entering <em>Nexus.</em></h1>
+      <p class="entry-gate-intro">
+        Science By Hugs products are offered for research use only and are not intended for human or veterinary use.
+      </p>
+
+      <div class="entry-gate-notice">
+        <strong>Research Use Only</strong>
+        <p>
+          Products are not intended for human consumption, human administration, veterinary use,
+          diagnosis, treatment, mitigation, cure, or prevention of disease or any medical condition.
+        </p>
+      </div>
+
+      <details class="entry-policy-details">
+        <summary>Read the Research Use Only Policy</summary>
+        <div class="entry-policy-copy">
+          <div class="entry-policy-meta">Effective October 1, 2026</div>
+          <pre>SCIENCE BY HUGS
+Research Use Only Policy
+Effective Date: October 1, 2026
+
+Science By HUGs provides research-grade and research-use-only peptide products for legitimate research applications.
+
+NOT FOR HUMAN OR VETERINARY USE
+Science By HUGs products are strictly intended for lawful research purposes and are not intended for human consumption, human administration, veterinary use, diagnosis, treatment, mitigation, cure, or prevention of disease or any medical condition.
+
+Science By HUGs does not sell products as medications, medical treatments, dietary supplements, or veterinary products.
+
+CUSTOMER RESPONSIBILITY
+By purchasing a Science By HUGs product, the customer acknowledges that the product is being purchased solely for legitimate research purposes and agrees to comply with all applicable laws, regulations, institutional requirements, and laboratory safety requirements.
+
+Customers must not use Science By HUGs products in humans or animals.
+
+Science By HUGs reserves the right to refuse or cancel an order when the circumstances indicate that the product may be intended for an unauthorized use.
+
+NO MEDICAL ADVICE
+Science By HUGs does not provide medical advice, diagnosis, treatment recommendations, dosing recommendations, administration instructions, or medical supervision.
+
+Nothing provided by Science By HUGs should be interpreted as a recommendation to use a research product in a human or animal.
+
+NO REPRESENTATIONS REGARDING HUMAN USE
+Science By HUGs makes no representation that its products are safe, effective, approved, or suitable for human or veterinary use.
+
+Customers should not rely upon Science By HUGs product information as medical or veterinary advice.
+
+IMPORTANT REGULATORY NOTICE
+The designation &quot;research use only&quot; does not by itself determine how a product is regulated. Science By HUGs will not knowingly market or represent products for uses inconsistent with applicable law.
+
+If a customer has questions regarding the legality or appropriate use of a product within a particular research setting, the customer should consult an appropriately qualified legal, regulatory, laboratory, or institutional professional.
+
+Science By HUGs
+Las Vegas, Nevada</pre>
+        </div>
+      </details>
+
+      <div class="entry-gate-confirmations">
+        <label class="entry-gate-check">
+          <input id="entryAge21" type="checkbox" />
+          <span>I confirm that I am 21 years of age or older.</span>
+        </label>
+        <label class="entry-gate-check">
+          <input id="entryResearchUse" type="checkbox" />
+          <span>I have read, understand, and agree to the Science By Hugs Research Use Only Policy.</span>
+        </label>
+      </div>
+
+      <button id="enterNexusButton" class="entry-gate-enter" type="button" disabled>
+        Enter Nexus
+      </button>
+      <button id="exitNexusButton" class="entry-gate-exit" type="button">
+        Leave Site
+      </button>
+
+      <p class="entry-gate-footnote">
+        Your acknowledgment is remembered on this device for 30 days. You will be asked again if the policy is updated.
+      </p>
+    </div>
+  </section>
+
+  <div class="stars" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Science By Hugs Nexus home">
+      <span class="minimal-wordmark">nexus<b class="wordmark-dot">.</b><span>SCIENCE BY HUGS</span></span>
+    </a>
+
+    <div class="top-actions">
+      <span class="system-status"><i></i> CATALOG LIVE</span>
+      <button id="menuButton" class="account-button menu-button" type="button" aria-label="Open menu" aria-controls="menuDialog"><span class="profile-avatar" data-profile-avatar aria-hidden="true">?</span><span>Menu</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <button id="cartButton" class="cart-button" type="button" aria-label="Open cart">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2 12h12l2-9H6M8 20h.01M18 20h.01"/></svg><span class="cart-label">Cart</span><span id="cartCount">0</span>
+      </button>
+      <button id="accountButton" class="account-button" type="button">Account</button>
+    </div>
+  </header>
+
+  
+  <main class="shell">
+    <section id="homeScreen" class="home-screen" aria-labelledby="homeGreeting">
+      <div class="home-intro"><h1 id="homeGreeting">Welcome to Nexus.</h1><p>Your research, connected.</p></div>
+      <button id="homeSignInButton" class="home-signin auth-secondary" type="button">Sign in to your account <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      <button id="latestOrderButton" class="latest-order" type="button"><span class="latest-order-copy"><small>Latest order</small><strong id="latestOrderStatus">Sign in to see your orders</strong><span id="latestOrderNumber">Keep your research in one place.</span></span><span class="text-action">View orders <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+
+      <div class="home-section-heading"><h2>Explore the catalog</h2><button id="browseCatalogButton" class="text-action" type="button">Browse catalog <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></div>
+      <div id="homeProductPreview" class="home-product-preview"><p class="state">Loading the catalog…</p></div>
+    </section>
+    <section id="catalogScreen" hidden aria-labelledby="catalogTitle">
+    <section class="hero">
+      <div class="eyebrow">SCIENCE BY HUGS</div>
+      <h1 id="catalogTitle">Research catalog</h1>
+
+    </section>
+
+    <section class="catalog-shell">
+      <div class="toolbar">
+        <label class="search">
+          <span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="M16 16l5 5"/></svg></span>
+          <input id="searchInput" aria-label="Search products" type="search" placeholder="Search products" autocomplete="off" />
+        </label>
+        <div id="categoryChips" class="chips" aria-label="Catalog categories"></div>
+      </div>
+
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">EXPLORE</span>
+          <h2>Research Catalog</h2>
+        </div>
+        <span id="productCount" class="count"></span>
+      </div>
+
+      <div id="catalogGrid" class="grid">
+      <article class="product-card" data-id="d39744f2-9d18-462c-aa9b-bbc3abe077e0">
+        <div class="product-image">
+          <img src="/science-by-hugs-vial-v3.png" alt="Science By Hugs research vial" loading="lazy" class="default-product-image">
+          
+        </div>
+        <div class="product-body">
+          <span class="category">Research Peptides</span>
+          <h3>Synthetic Research Peptide A</h3>
+          <p class="type">Peptide</p>
+          <div class="product-footer">
+            <strong>$40.00</strong>
+            <span class="availability ">Available</span>
+          </div>
+          <button class="add-cart-button" data-add-id="d39744f2-9d18-462c-aa9b-bbc3abe077e0" type="button">
+            Add to Cart
+          </button>
+        </div>
+      </article>
+    
+      <article class="product-card" data-id="595cf46c-a332-4cb6-b7eb-28738f405136">
+        <div class="product-image">
+          <img src="/science-by-hugs-vial-v3.png" alt="Science By Hugs research vial" loading="lazy" class="default-product-image">
+          
+        </div>
+        <div class="product-body">
+          <span class="category">Research Peptides</span>
+          <h3>Synthetic Research Peptide B</h3>
+          <p class="type">Peptide</p>
+          <div class="product-footer">
+            <strong>$60.00</strong>
+            <span class="availability ">Available</span>
+          </div>
+          <button class="add-cart-button" data-add-id="595cf46c-a332-4cb6-b7eb-28738f405136" type="button">
+            Add to Cart
+          </button>
+        </div>
+      </article>
+    </div>
+    </section>
+    <p class="catalog-footnote">For research use only.</p>
+    </section>
+  </main>
+
+  <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+    <button id="mobileHomeButton" class="mobile-nav-item active" type="button"><span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-7 9 7v11h-6v-7H9v7H3z"/></svg></span><span>Home</span></button>
+    <button id="mobileCatalogButton" class="mobile-nav-item" type="button"><span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5"/><path d="M16 16l5 5"/></svg></span><span>Catalog</span></button>
+    <button id="mobileOrdersButton" class="mobile-nav-item" type="button"><span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6M9 9h6M9 13h6M9 17h4"/></svg></span><span>Orders</span></button>
+    <button id="mobileAccountButton" class="mobile-nav-item" type="button"><span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span><span>Account</span></button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+
+  <dialog id="menuDialog" class="menu-dialog">
+    <button id="closeMenuDialog" class="dialog-close" aria-label="Close">×</button>
+    <div class="menu-head">
+
+      <h2>Explore</h2>
+      <p>Find what you need.</p>
+    </div>
+    <nav class="menu-grid" aria-label="Nexus menu">
+      <button class="menu-card" type="button" data-menu-target="catalog">
+        <span>CATALOG</span><strong>Research Catalog</strong><small>Browse available products.</small>
+      </button>
+      <button class="menu-card" type="button" data-menu-target="account">
+        <span>ACCOUNT</span><strong>My Account</strong><small>Orders, invoices, profile, and security.</small>
+      </button>
+      <button class="menu-card" type="button" data-menu-target="referral">
+        <span>REFERRALS</span><strong>Refer a Friend</strong><small>Referral rewards and progress.</small>
+      </button>
+      <button class="menu-card" type="button" data-menu-target="support">
+        <span>SUPPORT</span><strong>Get Support</strong><small>Order, payment, and account help.</small>
+      </button>
+      <button class="menu-card" type="button" data-menu-target="policies">
+        <span>POLICIES</span><strong>Policy Library</strong><small>Terms, privacy, shipping, and research policies.</small>
+      </button>
+    </nav>
+    <button id="menuDoneButton" class="auth-secondary menu-done" type="button">Back to Home</button>
+  </dialog>
+
+  <dialog id="supportDialog" class="support-dialog">
+    <div class="subpage-header">
+      <button id="backSupportToMenu" class="subpage-back-button" type="button">← Menu</button>
+      <strong>Support</strong><button id="closeSupportDialog" class="referral-close-button" aria-label="Close">×</button>
+    </div>
+    <div class="support-page">
+      <div class="support-hero">
+        <span class="eyebrow">NEXUS SUPPORT</span>
+        <h2>How can we help?</h2>
+        <p>Reach Science By Hugs support or save our contact card directly to your phone.</p>
+      </div>
+
+      <div class="support-grid">
+        <a class="support-action-card" href="mailto:support@sciencebyhugs.com">
+          <div class="support-action-icon">✉</div>
+          <div>
+            <span>EMAIL SUPPORT</span>
+            <strong>support@sciencebyhugs.com</strong>
+            <small>Open your email app with our support address ready.</small>
+          </div>
+        </a>
+
+        <a class="support-action-card" href="sms:+17253107502">
+          <div class="support-action-icon">💬</div>
+          <div>
+            <span>TEXT SUPPORT</span>
+            <strong>(725) 310-7502</strong>
+            <small>Open your messaging app and text the Science By Hugs support line.</small>
+          </div>
+        </a>
+
+
+      </div>
+
+      <div class="support-info-card">
+        <span class="eyebrow">SCIENCE BY HUGs</span>
+        <strong>Customer Support</strong>
+        <p>For account, order, invoice, payment, or general questions, include your customer ID or order number when available.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="policyDialog" class="policy-dialog">
+    <div class="policy-dialog-header">
+      <button id="backPolicyToMenu" class="subpage-back-button" type="button">← Menu</button><strong>Policies</strong>
+      <button id="closePolicyDialog" class="referral-close-button" aria-label="Close">×</button>
+    </div>
+
+    <div class="policy-dialog-content">
+      <div class="policy-page-intro">
+        <h2>Policies & Legal</h2>
+        <p>Review the policies that apply to orders, research-use products, privacy, refunds, shipping, and delivery.</p>
+      </div>
+
+      <div class="policy-library">
+        
+  <details class="policy-card">
+    <summary>
+      <div>
+        <span class="policy-kicker">LEGAL POLICY</span>
+        <strong>Terms &amp; Conditions</strong>
+        <small>Effective October 1, 2026</small>
+      </div>
+      <span class="policy-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="policy-content">SCIENCE BY HUGS
+Terms &amp; Conditions
+Effective Date: October 1, 2026
+Business Name: Science By HUGs
+Business Location: Las Vegas, Nevada
+
+1. ACCEPTANCE OF TERMS
+By accessing, browsing, ordering from, or otherwise interacting with Science By HUGs (&quot;Science By HUGs,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you acknowledge that you have read, understood, and agreed to these Terms &amp; Conditions.
+
+If you do not agree to these Terms &amp; Conditions, you may not place an order with Science By HUGs.
+
+2. PRODUCTS
+Science By HUGs sells research-grade and research-use-only peptide products intended solely for legitimate laboratory, analytical, educational, or other lawful research purposes.
+
+All products are sold strictly for research purposes and are not sold as drugs, medications, dietary supplements, medical treatments, or veterinary products.
+
+3. RESEARCH USE ONLY
+Science By HUGs products are not intended for human consumption, human administration, veterinary use, diagnosis, treatment, mitigation, cure, or prevention of any disease, illness, condition, or injury.
+
+Customers are solely responsible for ensuring that their purchase and intended research activities comply with all applicable federal, state, and local laws, regulations, and institutional requirements.
+
+Science By HUGs does not provide medical advice, treatment recommendations, dosing instructions, administration instructions, or instructions for using research products in humans or animals.
+
+4. PRODUCT INFORMATION
+Product names, descriptions, specifications, photographs, and other information are provided for legitimate research purposes.
+
+Science By HUGs does not represent that any product is safe, effective, approved, or suitable for use in humans or animals.
+
+Customers are responsible for independently determining whether a product is appropriate and lawful for their intended research application.
+
+5. PURCHASING ELIGIBILITY
+By placing an order, the customer represents that:
+• They are legally permitted to purchase the products.
+• They will use the products only for lawful research purposes.
+• They will not use the products in humans or animals.
+• They will not resell or redistribute products in violation of applicable law.
+• They will comply with all applicable federal, state, and local laws and regulations.
+
+Science By HUGs reserves the right to refuse, cancel, or decline any order at its discretion when there is reason to believe an order may violate these Terms &amp; Conditions or applicable law.
+
+6. PAYMENTS
+Science By HUGs currently accepts payment through approved payment methods communicated to customers at the time of purchase, which may include Zelle, PayPal, and Venmo.
+
+An order is not considered confirmed until payment has been received and accepted by Science By HUGs.
+
+Customers are responsible for providing accurate payment and contact information.
+
+7. ORDER ACCEPTANCE
+Submitting an order does not guarantee acceptance.
+
+Science By HUGs reserves the right to cancel or decline an order before fulfillment, including when:
+• Product availability changes;
+• Payment cannot be verified;
+• Customer information is incomplete or inaccurate;
+• The requested transaction appears inconsistent with research-only requirements;
+• The transaction may violate applicable law; or
+• Science By HUGs otherwise determines that fulfillment is inappropriate.
+
+If Science By HUGs cancels an order for which payment has already been received, any refund will be handled in accordance with applicable law and the applicable Refund Policy.
+
+8. RETURNS, REFUNDS, AND RESHIPMENTS
+Science By HUGs does not accept returns based solely on customer preference, change of mind, improper storage, mishandling, or customer negligence.
+
+Refunds or replacement shipments may be provided when a product is confirmed to have been damaged prior to or during delivery, subject to the requirements of the Science By HUGs Return &amp; Refund Policy.
+
+Customers must promptly notify Science By HUGs of any suspected damage and provide the requested photographs, order information, and other documentation.
+
+Nothing in this policy is intended to eliminate any refund or cancellation rights that cannot legally be waived.
+
+9. SHIPPING
+Science By HUGs currently ships only within the Las Vegas, Nevada service area.
+
+Customers are responsible for providing accurate delivery information.
+
+Science By HUGs is not responsible for delays, failed delivery, or loss resulting from an incorrect address, failure to receive a delivery, or other circumstances caused by the customer.
+
+Shipping and delivery terms are further described in the Science By HUGs Shipping &amp; Delivery Policy.
+
+10. LIMITATION OF LIABILITY
+To the maximum extent permitted by applicable law, Science By HUGs shall not be liable for indirect, incidental, consequential, special, or punitive damages arising from the purchase, possession, storage, handling, transportation, or use of any product.
+
+Nothing in these Terms &amp; Conditions excludes or limits liability that cannot legally be excluded or limited.
+
+11. CUSTOMER RESPONSIBILITY
+Customers are responsible for determining the legality of purchasing, possessing, transporting, storing, and using any product in their jurisdiction and research environment.
+
+Customers are also responsible for maintaining appropriate laboratory practices, safety procedures, storage conditions, handling procedures, and documentation appropriate to their research activities.
+
+12. INTELLECTUAL PROPERTY
+All Science By HUGs names, logos, graphics, written content, website content, application content, product descriptions, photographs, and other original materials are the property of Science By HUGs or are used with permission.
+
+No portion of Science By HUGs materials may be copied, reproduced, modified, distributed, or commercially exploited without prior written permission.
+
+13. ACCOUNTS, PROFILES, AND COMMUNICATIONS
+NEXUS is the Science By Hugs customer application. Keep your account and contact details accurate, protect your password, and notify us of unauthorized activity. Upload only profile images you own or have permission to use; do not upload unlawful, abusive, misleading, or sensitive content. You retain ownership of your photo and permit us and our service providers to store, process, crop, and display it for your account. You may replace or remove it in Manage Account. Profiles are not a public social directory.
+
+Marketing email and SMS choices are optional and separate from acceptance of these terms, account activation, purchases, and push permissions. Creating or using an account does not itself enroll you in marketing campaigns. See the Email &amp; SMS Communications Policy for consent and opt-out details.
+
+PRIVACY
+Customer information is handled in accordance with the Science By HUGs Privacy Policy.
+
+14. CHANGES TO THESE TERMS
+Science By HUGs may update these Terms &amp; Conditions from time to time.
+
+Updated terms will become effective when posted or otherwise communicated, unless a different effective date is stated.
+
+15. GOVERNING LAW
+These Terms &amp; Conditions shall be governed by the laws applicable in the State of Nevada, without regard to conflict-of-law principles, except where applicable law requires otherwise.
+
+16. SEVERABILITY
+If any provision of these Terms &amp; Conditions is determined to be invalid or unenforceable, the remaining provisions shall remain in effect to the fullest extent permitted by law.
+
+17. CONTACT
+Questions regarding these Terms &amp; Conditions may be directed to Science By HUGs through the official customer-support contact information provided by Science By HUGs.
+
+Science By HUGs
+Las Vegas, Nevada</div>
+  </details>
+
+  <details class="policy-card">
+    <summary>
+      <div>
+        <span class="policy-kicker">LEGAL POLICY</span>
+        <strong>Research Use Only Policy</strong>
+        <small>Effective October 1, 2026</small>
+      </div>
+      <span class="policy-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="policy-content">SCIENCE BY HUGS
+Research Use Only Policy
+Effective Date: October 1, 2026
+
+Science By HUGs provides research-grade and research-use-only peptide products for legitimate research applications.
+
+NOT FOR HUMAN OR VETERINARY USE
+Science By HUGs products are strictly intended for lawful research purposes and are not intended for human consumption, human administration, veterinary use, diagnosis, treatment, mitigation, cure, or prevention of disease or any medical condition.
+
+Science By HUGs does not sell products as medications, medical treatments, dietary supplements, or veterinary products.
+
+CUSTOMER RESPONSIBILITY
+By purchasing a Science By HUGs product, the customer acknowledges that the product is being purchased solely for legitimate research purposes and agrees to comply with all applicable laws, regulations, institutional requirements, and laboratory safety requirements.
+
+Customers must not use Science By HUGs products in humans or animals.
+
+Science By HUGs reserves the right to refuse or cancel an order when the circumstances indicate that the product may be intended for an unauthorized use.
+
+NO MEDICAL ADVICE
+Science By HUGs does not provide medical advice, diagnosis, treatment recommendations, dosing recommendations, administration instructions, or medical supervision.
+
+Nothing provided by Science By HUGs should be interpreted as a recommendation to use a research product in a human or animal.
+
+NO REPRESENTATIONS REGARDING HUMAN USE
+Science By HUGs makes no representation that its products are safe, effective, approved, or suitable for human or veterinary use.
+
+Customers should not rely upon Science By HUGs product information as medical or veterinary advice.
+
+IMPORTANT REGULATORY NOTICE
+The designation &quot;research use only&quot; does not by itself determine how a product is regulated. Science By HUGs will not knowingly market or represent products for uses inconsistent with applicable law.
+
+If a customer has questions regarding the legality or appropriate use of a product within a particular research setting, the customer should consult an appropriately qualified legal, regulatory, laboratory, or institutional professional.
+
+Science By HUGs
+Las Vegas, Nevada</div>
+  </details>
+
+  <details class="policy-card">
+    <summary>
+      <div>
+        <span class="policy-kicker">LEGAL POLICY</span>
+        <strong>Return &amp; Refund Policy</strong>
+        <small>Effective October 1, 2026</small>
+      </div>
+      <span class="policy-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="policy-content">SCIENCE BY HUGS
+Return &amp; Refund Policy
+Effective Date: October 1, 2026
+
+Science By HUGs takes product quality and customer satisfaction seriously. Because our products are research-use-only materials, we maintain a limited return and refund policy.
+
+1. GENERAL POLICY
+All sales are considered final except where a product is confirmed to have been damaged prior to or during delivery, or where a refund is otherwise required by applicable law.
+
+We do not accept returns or provide refunds solely because a customer:
+• Changed their mind;
+• Ordered the wrong product;
+• Ordered the wrong quantity;
+• No longer wants the product;
+• Improperly stored the product;
+• Mishandled the product;
+• Failed to receive the delivery;
+• Provided an incorrect delivery address; or
+• Otherwise caused or contributed to the issue through negligence or misuse.
+
+2. DAMAGED PRODUCTS
+If a product arrives damaged, the customer must contact Science By HUGs as soon as reasonably possible after receiving the order.
+
+Customers may be asked to provide:
+• Order information;
+• Photographs of the damaged product;
+• Photographs of the packaging;
+• A description of the damage; and
+• Any other information reasonably necessary to evaluate the claim.
+
+Science By HUGs will review the claim and determine whether the product qualifies for a replacement shipment or refund.
+
+3. REPLACEMENT OR REFUND
+If Science By HUGs confirms that a product was damaged prior to or during delivery, Science By HUGs may, at its discretion and subject to applicable law:
+• Replace the affected product; or
+• Refund the amount paid for the affected product.
+
+A replacement or refund will not be provided for damage caused after delivery through improper storage, mishandling, contamination, alteration, or other customer negligence.
+
+4. INCORRECT ORDERS
+If Science By HUGs sends an item that differs from the item ordered, the customer should contact Science By HUGs promptly so the issue can be reviewed and corrected.
+
+5. NON-DELIVERY AND SHIPPING DELAYS
+Nothing in this policy limits rights or remedies that may apply under federal or state law if Science By HUGs fails to fulfill an order or cannot ship within an applicable promised timeframe.
+
+6. REFUND PROCESSING
+When a refund is approved, Science By HUGs will communicate the refund amount and expected processing timeframe to the customer.
+
+7. NO AUTOMATIC REFUNDS
+Submitting a refund request does not automatically qualify an order for a refund or replacement. Each damage claim may be reviewed individually.
+
+8. CONTACT
+Customers requesting assistance with a damaged or incorrect order should contact Science By HUGs using the official customer-support contact information provided by Science By HUGs.
+
+Science By HUGs
+Las Vegas, Nevada</div>
+  </details>
+
+  <details class="policy-card">
+    <summary>
+      <div>
+        <span class="policy-kicker">LEGAL POLICY</span>
+        <strong>Privacy Policy</strong>
+        <small>Effective October 1, 2026</small>
+      </div>
+      <span class="policy-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="policy-content">SCIENCE BY HUGS
+Privacy Policy
+Effective Date: October 1, 2026
+Business Name: Science By HUGs
+Business Location: Las Vegas, Nevada
+
+1. INTRODUCTION
+Science By HUGs (&quot;Science By HUGs,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) respects the privacy of our customers and is committed to handling personal information responsibly.
+
+This Privacy Policy explains what information we collect, how we use it, the services and platforms through which information may be processed, and the choices available to customers.
+
+By using our website, application, ordering system, or communicating with Science By HUGs, you acknowledge the practices described in this Privacy Policy.
+
+2. INFORMATION WE COLLECT
+Depending on how you interact with Science By HUGs, we may collect:
+• Name
+• Phone number
+• Email address
+• Delivery or shipping information
+• Order and purchase information
+• Payment-related information necessary to identify or reconcile a transaction
+• Communications between you and Science By HUGs
+• Information you voluntarily provide when requesting customer support
+• Website or application information, including cookies or similar technologies where used
+• Account identifiers, profile names, optional profile photos, and photo changes
+• Communication preferences and consent records, including the contact details, disclosure version, source, and recorded time of a choice
+• Push-subscription endpoints and cryptographic keys needed to deliver device notifications
+
+Science By HUGs does not intentionally request sensitive personal information unless it is reasonably necessary for a specific business purpose.
+
+3. HOW WE USE INFORMATION
+We may use collected information to:
+• Process and manage orders;
+• Confirm payments;
+• Arrange delivery;
+• Communicate with customers about orders;
+• Provide customer support;
+• Respond to questions and requests;
+• Maintain business and transaction records;
+• Prevent fraud, misuse, or unauthorized transactions;
+• Improve our website, application, ordering process, and customer experience;
+• Maintain business operations;
+• Provide account profiles and optional profile photos;
+• Deliver opted-in email and SMS campaigns, maintain suppression records, and honor opt-outs;
+• Deliver device notifications when enabled; and
+• Comply with applicable legal or regulatory requirements.
+
+4. THIRD-PARTY SERVICES AND PLATFORMS
+Science By HUGs uses third-party services and platforms to operate portions of its business.
+
+These may include:
+• Supabase — authentication, database, private profile-photo storage, and application services;
+• Brevo — email and SMS campaign delivery, contact preferences, and unsubscribe/suppression processing;
+• Browser, operating-system, and push-service providers — device notification delivery;
+• Google Sheets — business, order, and operational recordkeeping;
+• GitHub — website/application hosting, development, or related technical operations;
+• PayPal — payment processing;
+• Zelle — payment processing;
+• Venmo — payment processing; and
+• Telephone/mobile service providers — customer communications and business phone operations.
+
+Information may be transmitted to or stored within these services when necessary to provide the applicable business function.
+
+Each third-party provider may have its own privacy practices, terms, security measures, and policies. Customers should review the applicable provider&#039;s policies for additional information.
+
+5. PAYMENT INFORMATION
+Science By HUGs uses third-party payment services including PayPal, Zelle, and Venmo.
+
+Science By HUGs does not intentionally store customers&#039; complete payment-card numbers, bank-account credentials, passwords, or payment-provider login credentials.
+
+Payment providers may independently collect and process information necessary to authorize and complete transactions in accordance with their own policies.
+
+6. CUSTOMER COMMUNICATIONS
+We distinguish necessary account, security, order, payment, delivery, and support communications from marketing campaigns. Marketing can include newsletters, catalog announcements, offers, and updates about Science By Hugs, NEXUS, and PULSE, delivered individually or to many opted-in recipients through campaign services.
+
+Marketing email and SMS consent is requested separately and is not required to create an account or buy products. Providing a phone number, resetting a password, accepting legal policies, or enabling push notifications does not itself authorize marketing texts. Consent records are specific to the selected channel and contact details; a changed phone number requires a new SMS choice.
+
+Unsubscribe from marketing emails using the message&#039;s unsubscribe link. For SMS, reply STOP when replies are supported, or use the opt-out method in the message. You may also contact legal@sciencebyhugs.com or update communication preferences in the application. We honor reasonable revocation requests and maintain suppression records to prevent further unwanted marketing. Essential account and transaction emails may continue where appropriate; SMS revocation is honored according to applicable law, and necessary information can be provided through other channels.
+
+Push notifications require a separate browser/device permission and application subscription. Disable them in Manage Account or your device/browser settings. Notifications may appear on your lock screen; review your device privacy settings. Email and SMS preferences do not grant push permission.
+
+7. COOKIES AND WEBSITE/APPLICATION DATA
+Science By HUGs may use cookies, local storage, analytics tools, or similar technologies to operate, secure, maintain, and improve its website or application.
+
+These technologies may collect information such as browser type, device information, general usage activity, pages or features accessed, and technical information needed to operate the service.
+
+The specific information collected may depend on the technology and third-party services used by the website or application.
+
+8. INFORMATION SHARING
+Science By HUGs does not sell customer personal information. We do not share mobile numbers or SMS opt-in data with third parties for their own marketing. Service providers may process this data on our behalf to deliver messages, record consent, and honor opt-outs. Profile photos are held in private storage and displayed through temporary access links for account features; they are not published to a public profile directory. Do not include sensitive information in a profile photo.
+
+We may disclose or provide access to information when reasonably necessary to:
+• Process or fulfill an order;
+• Process or reconcile a payment;
+• Arrange delivery;
+• Provide customer support;
+• Operate the website or application;
+• Maintain business records;
+• Protect Science By HUGs, its customers, or others from fraud, abuse, or unauthorized activity;
+• Comply with a legal obligation, court order, subpoena, or governmental request; or
+• Complete a business transaction such as a merger, acquisition, restructuring, or sale of assets.
+
+9. DATA SECURITY
+Science By HUGs takes reasonable measures appropriate to the size and nature of the business to protect customer information from unauthorized access, misuse, alteration, or disclosure.
+
+However, no electronic storage system, transmission method, website, application, or third-party service can be guaranteed to be completely secure.
+
+Customers should avoid sending passwords, financial credentials, or other highly sensitive information through ordinary email, text messages, or other unsecured communications.
+
+10. DATA RETENTION
+Science By HUGs may retain customer and transaction information for as long as reasonably necessary for business operations, customer service, accounting, recordkeeping, fraud prevention, legal compliance, dispute resolution, or other legitimate business purposes.
+
+Information may be retained longer where required by applicable law.
+
+11. CUSTOMER PRIVACY REQUESTS
+Customers may edit supported profile fields, replace or remove their profile photo, and change marketing preferences in the application. Contact legal@sciencebyhugs.com to request access, correction, deletion, or other rights available under applicable law. Deletion of a photo from active storage may not immediately remove backup copies retained under normal backup schedules. Account deletion requests may require identity verification; transaction and suppression records may be retained when necessary.
+
+Depending on the nature of the request and applicable law, Science By HUGs may need to verify the identity of the person making the request.
+
+Some information may need to be retained for legitimate business, legal, accounting, security, or regulatory purposes.
+
+12. CHILDREN&#039;S PRIVACY
+Science By HUGs products and services are not directed toward children.
+
+We do not knowingly collect personal information from children in violation of applicable law.
+
+13. THIRD-PARTY LINKS AND SERVICES
+The Science By HUGs website or application may contain or interact with third-party services or links.
+
+Science By HUGs is not responsible for the privacy practices, content, security, or policies of third-party websites or services.
+
+Customers should review the privacy policies of third parties before providing information to them.
+
+14. CHANGES TO THIS PRIVACY POLICY
+Science By HUGs may update this Privacy Policy from time to time as its business, technology, services, or legal obligations change.
+
+The updated policy will be posted or otherwise communicated with an updated effective date when appropriate.
+
+15. CONTACT
+Questions, privacy requests, or concerns regarding this Privacy Policy may be directed to Science By HUGs using the official customer-support contact information provided by the business.
+
+Science By HUGs
+Las Vegas, Nevada</div>
+  </details>
+
+  <details class="policy-card">
+    <summary>
+      <div>
+        <span class="policy-kicker">LEGAL POLICY</span>
+        <strong>Shipping &amp; Delivery Policy</strong>
+        <small>Effective October 1, 2026</small>
+      </div>
+      <span class="policy-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="policy-content">SCIENCE BY HUGS
+Shipping &amp; Delivery Policy
+Effective Date: October 1, 2026
+Business Name: Science By HUGs
+Business Location: Las Vegas, Nevada
+
+1. SERVICE AREA
+Science By HUGs currently provides shipping and delivery only within the Las Vegas, Nevada service area.
+
+Orders outside the available service area may be declined or cancelled.
+
+2. DELIVERY INFORMATION
+Customers are responsible for providing complete and accurate delivery information when placing an order.
+
+Science By HUGs is not responsible for delays, failed delivery, or loss resulting from an incorrect or incomplete address, failure to receive a delivery, or other circumstances caused by the customer.
+
+3. ORDER PROCESSING
+Orders are processed after payment has been received and accepted by Science By HUGs.
+
+Estimated delivery dates may appear in your NEXUS account and in permitted delivery communications. Keep contact details current and review your order in the application; notification delivery is not guaranteed. Estimated delivery dates or delivery windows are provided for convenience and are not guaranteed unless Science By HUGs expressly states otherwise.
+
+4. SHIPPING AND DELIVERY FEES
+Applicable shipping or delivery fees will be communicated to the customer before an order is completed.
+
+Membership benefits, promotions, or referral rewards may reduce or eliminate eligible shipping fees when applicable.
+
+5. DELIVERY DELAYS
+Science By HUGs will make reasonable efforts to fulfill accepted orders within the estimated delivery timeframe.
+
+Delivery may be delayed by product availability, weather, transportation conditions, operational issues, customer availability, incorrect delivery information, or other circumstances outside the reasonable control of Science By HUGs.
+
+If Science By HUGs becomes aware of a material delay, reasonable efforts will be made to communicate updated delivery information to the customer.
+
+6. FAILED OR MISSED DELIVERY
+Customers are responsible for being available to receive an order when required and for providing a location where delivery can reasonably be completed.
+
+Science By HUGs is not responsible for a failed delivery caused by customer unavailability, inaccessible delivery locations, incorrect instructions, or inaccurate contact or delivery information.
+
+Any additional delivery costs caused by a customer-requested redelivery may be the customer&#039;s responsibility to the extent permitted by applicable law.
+
+7. DAMAGED PRODUCTS
+If an order arrives damaged, the customer should contact Science By HUGs as soon as reasonably possible.
+
+Customers may be asked to provide order information, photographs of the damaged product and packaging, and other information reasonably necessary to evaluate the claim.
+
+Approved damaged-product claims will be handled in accordance with the Science By HUGs Return &amp; Refund Policy.
+
+8. INCORRECT ORDERS
+If Science By HUGs delivers an item that differs from the item ordered, the customer should promptly contact Science By HUGs so the issue can be reviewed and corrected.
+
+9. NON-DELIVERY
+Nothing in this policy limits rights or remedies that may apply under federal or state law if Science By HUGs fails to fulfill an accepted order or cannot deliver within an applicable promised timeframe.
+
+10. CUSTOMER RESPONSIBILITY
+Customers are responsible for promptly reviewing delivery information, maintaining accurate contact information, and notifying Science By HUGs of any delivery issue as soon as reasonably possible.
+
+11. CHANGES TO THIS POLICY
+Science By HUGs may update this Shipping &amp; Delivery Policy from time to time.
+
+Updated terms will become effective when posted or otherwise communicated, unless a different effective date is stated.
+
+12. CONTACT
+Questions regarding shipping, delivery, or this policy may be directed to:
+
+Science By HUGs
+Las Vegas, Nevada
+legal@sciencebyhugs.com</div>
+  </details>
+
+  <details class="policy-card">
+    <summary>
+      <div>
+        <span class="policy-kicker">LEGAL POLICY</span>
+        <strong>Email &amp; SMS Communications Policy</strong>
+        <small>Effective October 1, 2026</small>
+      </div>
+      <span class="policy-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="policy-content">SCIENCE BY HUGS
+Email &amp; SMS Communications Policy
+Effective Date: October 1, 2026
+
+1. PROGRAM AND SENDER
+Science By Hugs may send marketing emails and recurring SMS campaign messages about NEXUS, PULSE, catalog news, offers, and brand updates. Campaigns may be sent in bulk through service providers such as Brevo. Account, security, payment, order, and delivery messages have separate service purposes. Marketing content remains subject to our Research Use Only Policy.
+
+2. OPTIONAL, SEPARATE CONSENT
+Choose email and SMS independently using the optional unchecked controls presented during signup, account activation, or account management. Marketing consent is not a condition of purchase or account creation. Accepting legal policies, supplying contact information, or resetting a password is not marketing consent. No existing customer is automatically enrolled by this policy update.
+
+3. SMS AGREEMENT
+By selecting the SMS checkbox and submitting your choice, you electronically sign and authorize Science By Hugs to send recurring marketing texts to the mobile number you provide, including texts sent using automated technology. You represent that you are the subscriber or authorized user of that number. Message frequency varies. Message and data rates may apply. Delivery depends on your carrier and device and is not guaranteed. Notify us if your number changes; consent for an old number does not transfer to a new one.
+
+4. OPT-OUT AND HELP
+Unsubscribe from marketing email using the link in the message. Reply STOP to SMS when replies are supported; HELP requests assistance. If a sender cannot receive replies, each message must identify an accessible alternative opt-out method. Contact legal@sciencebyhugs.com for assistance or any reasonable request to revoke consent. You can also save updated preferences in your account. We will honor opt-outs promptly and within applicable legal deadlines. A non-marketing confirmation of an SMS opt-out may be sent where permitted. Opting out does not prevent account access or purchases.
+
+5. EMAIL CAMPAIGNS
+Commercial emails identify Science By Hugs, use accurate sender information and subjects, provide a valid postal address and a working unsubscribe method, and honor unsubscribe requests. Necessary account, security, and transaction emails may continue where appropriate. A customer relationship is not blanket permission for marketing SMS.
+
+6. RECORDS, PRIVACY, AND PUSH
+We record your account identifier, selected channels, relevant email/phone, disclosure version, source of the choice, and server-recorded time. We may retain consent and suppression records to document choices and prevent unwanted communications. See our Privacy Policy for service providers and data practices. Mobile numbers and SMS consent are not sold or shared for third-party marketing. Device push notifications have separate permissions and controls.
+
+7. CONTACT AND CHANGES
+Science By Hugs, Las Vegas, Nevada
+legal@sciencebyhugs.com
+Material program changes will be communicated as appropriate. A policy update does not create new consent or override an opt-out.</div>
+  </details>
+
+      </div>
+
+      <div class="policy-legal-contact">
+        <span class="eyebrow">LEGAL CONTACT</span>
+        <strong>Questions about these policies?</strong>
+        <a href="mailto:legal@sciencebyhugs.com">legal@sciencebyhugs.com</a>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="referralDialog" class="referral-dialog">
+    <div class="referral-dialog-header">
+      <button id="backReferralToMenu" class="subpage-back-button" type="button">← Menu</button>
+      <strong>Referrals</strong>
+      <button id="closeReferralDialog" class="referral-close-button" aria-label="Close">×</button>
+    </div>
+    <div id="referralDialogContent" class="referral-dialog-content"></div>
+  </dialog>
+
+  <dialog id="productDialog" class="product-dialog">
+    <button id="closeDialog" class="dialog-close" aria-label="Close">×</button>
+    <div id="dialogContent"></div>
+  </dialog>
+
+  <dialog id="cartDialog" class="cart-dialog">
+    <button id="closeCartDialog" class="dialog-close" aria-label="Close">×</button>
+
+    <div class="cart-heading">
+      <span class="eyebrow">NEXUS CHECKOUT</span>
+      <h2>Your research cart.</h2>
+      <p>Review your items. Checkout and invoice requests are unavailable in this early build.</p>
+    </div>
+
+    <div id="cartEmpty" class="cart-empty">
+      <div class="cart-empty-icon">◇</div>
+      <strong>Your cart is empty.</strong>
+      <p>Add products from the catalog to get started.</p>
+    </div>
+
+    <div id="cartContent" hidden>
+      <div id="cartItems" class="cart-items"></div>
+
+      <section class="checkout-panel">
+        <div class="checkout-title">Order Summary</div>
+        <div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
+        <div class="summary-row"><span id="cartDiscountLabel">Discounts</span><strong id="cartDiscount">-$0.00</strong></div>
+        <div class="summary-row"><span>Shipping</span><strong id="cartShipping">$0.00</strong></div>
+        <div class="summary-row"><span>Sales Tax (8%)</span><strong id="cartTax">$0.00</strong></div>
+        <div class="summary-row"><span>Processing fee (5%)</span><strong id="cartProcessingFee">$0.00</strong></div>
+        <div class="summary-row total-row"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
+        <div class="server-note">Final pricing is revalidated securely when the request is submitted.</div>
+      </section>
+
+      <section id="customerPreview" class="checkout-panel customer-preview">
+        <div class="checkout-title">Checkout Customer</div>
+        <div id="customerSignedOut" class="customer-signed-out">
+          <p>Sign in before checking out. Nexus will fill your customer information automatically.</p>
+          <button id="cartSignInButton" class="auth-secondary" type="button">Sign In</button>
+        </div>
+
+        <div id="customerSignedIn" hidden>
+          <div class="customer-name" id="checkoutCustomerName">—</div>
+          <div class="customer-detail" id="checkoutCustomerId">—</div>
+          <div class="customer-detail" id="checkoutCustomerEmail">—</div>
+          <div class="customer-detail" id="checkoutCustomerPhone">—</div>
+
+          <label class="checkout-field">
+            Preferred Contact
+            <select id="contactMethod">
+              <option value="">Choose one</option>
+              <option value="Text">Text</option>
+              <option value="Email">Email</option>
+              <option value="Phone">Phone</option>
+            </select>
+          </label>
+
+          <label class="checkout-field">
+            Notes for this order
+            <textarea id="customerNotes" rows="3" maxlength="500" placeholder="Optional"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="checkout-panel discount-code-panel">
+        <div class="discount-code-heading">
+          <div>
+            <span class="eyebrow">PROMOTIONS</span>
+            <div class="checkout-title">Discount Code</div>
+          </div>
+          <span class="discount-code-badge">OPTIONAL</span>
+        </div>
+        <div class="discount-code-row">
+          <label class="discount-code-field" for="discountCode">
+            <span class="sr-only">Discount code</span>
+            <input
+              id="discountCode"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="characters"
+              maxlength="40"
+              placeholder="Enter code"
+            />
+          </label>
+          <button id="applyDiscountCodeButton" class="discount-code-apply" type="button">Apply</button>
+        </div>
+        <div id="discountCodeMessage" class="discount-code-message" aria-live="polite"></div>
+      </section>
+
+      <section class="policy-panel">
+        <label class="policy-check">
+          <input id="policyAcknowledgment" type="checkbox" />
+          <span>
+            I have read, acknowledged, and agree to comply with all Science By Hugs policies.
+          </span>
+        </label>
+      </section>
+
+      <section class="checkout-choice">
+        <button id="payNowButton" class="request-invoice-button" type="button">
+          Pay Now
+        </button>
+        <button id="requestInvoiceButton" class="auth-secondary checkout-invoice-button" type="button">
+          Request Invoice by Email
+        </button>
+        <p>Pay now with PayPal, Venmo, Apple Pay, or Zelle — or request an invoice and pay later.</p>
+      </section>
+
+      <section id="cartPayPanel" class="cart-pay-panel" hidden>
+        <div class="checkout-title">Choose Payment Method</div>
+        <p class="cart-pay-copy">PayPal, Venmo, and Apple Pay include a 5% processing surcharge. Zelle does not. Your final total is revalidated securely before payment.</p>
+        <div class="nexus-wallet-buttons">
+          <paypal-button id="cartPayPalButton" class="nexus-paypal-button" hidden></paypal-button>
+          <venmo-button id="cartVenmoButton" class="nexus-venmo-button" type="pay" hidden></venmo-button>
+          <apple-pay-button id="cartApplePayButton" class="nexus-apple-pay-button" buttonstyle="black" type="buy" locale="en-US" hidden></apple-pay-button>
+          <button id="cartZelleStartButton" class="zelle-submit-button" type="button" hidden>Pay with Zelle</button>
+        </div>
+        <div id="cartPayMessage" class="paypal-message" aria-live="polite"></div>
+
+        <div id="cartZellePanel" class="zelle-shell" hidden>
+          <div class="zelle-head">
+            <strong>Pay with Zelle</strong>
+            <small>Send the exact server-verified total, then report the payment below.</small>
+          </div>
+          <div id="cartZelleDetails" class="zelle-details"></div>
+          <label class="zelle-confirmation-label">
+            Confirmation / reference
+            <input id="cartZelleConfirmation" class="zelle-confirmation" type="text" maxlength="120" placeholder="Optional">
+          </label>
+          <button id="cartZelleSubmitButton" class="zelle-submit-button" type="button">
+            I Sent the Zelle Payment
+          </button>
+          <div id="cartZelleMessage" class="zelle-message"></div>
+        </div>
+      </section>
+
+      <div id="invoiceRequestMessage" class="invoice-request-message" aria-live="polite"></div>
+    </div>
+
+    <div id="invoiceSuccess" class="invoice-success" hidden>
+      <div class="success-orbit">✓</div>
+      <span class="eyebrow">REQUEST RECEIVED</span>
+      <h2>Invoice queued.</h2>
+      <p>Your invoice request is waiting for Science By Hugs approval.</p>
+      <div class="success-number">
+        <span>Invoice</span>
+        <strong id="successInvoiceNumber">—</strong>
+      </div>
+      <button id="successCloseButton" class="auth-primary" type="button">Return to Nexus</button>
+    </div>
+
+    <div id="payNowSuccess" class="invoice-success" hidden>
+      <div class="success-orbit">✓</div>
+      <span class="eyebrow">CHECKOUT RECEIVED</span>
+      <h2 id="payNowSuccessTitle">Payment received.</h2>
+      <p id="payNowSuccessCopy">Your order has been sent to Science By Hugs Core.</p>
+      <div class="success-number">
+        <span>Order</span>
+        <strong id="payNowOrderNumber">—</strong>
+      </div>
+      <button id="payNowSuccessCloseButton" class="auth-primary" type="button">Return to Nexus</button>
+    </div>
+  </dialog>
+
+  <dialog id="accountDialog" class="account-dialog">
+    <button id="closeAccountDialog" class="dialog-close" aria-label="Close">×</button>
+
+    <div id="signedOutView" class="auth-shell">
+      <div class="auth-brand-panel">
+        <h2>Welcome back.</h2>
+        <p class="account-copy">Your research, all in one place.</p>
+      </div>
+
+      <form id="loginForm" class="auth-form auth-card">
+        <label>
+          Email
+          <input id="loginEmail" type="email" autocomplete="email" required />
+        </label>
+        <label>
+          Password
+          <input id="loginPassword" type="password" autocomplete="current-password" required />
+        </label>
+        <button id="forgotPasswordButton" class="auth-link auth-forgot-link" type="button">Forgot password?</button>
+        <button id="loginSubmit" class="auth-primary" type="submit">Sign in</button>
+        <div class="auth-switch"><span>New to Nexus?</span><button id="createAccountButton" class="auth-link" type="button">Create account</button></div>
+        <div class="auth-divider auth-divider-apple"><span>or continue with</span></div>
+        <button class="apple-signin-button" type="button" data-apple-intent="signin" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 1.5c.1 1.2-.4 2.4-1.1 3.2-.8.9-1.9 1.4-3 1.3-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.4 3-1.4M20.5 17.2c-.5 1.2-.8 1.7-1.5 2.8-.9 1.4-2.2 3.1-3.8 3.1-1.4 0-1.8-.9-3.7-.9-1.8 0-2.3.9-3.7.9-1.5 0-2.7-1.5-3.6-2.9C1.6 16.3 1 10.8 3 7.9c1.4-2.1 3.6-2.4 5-2.4 1.6 0 2.6.9 3.9.9 1.3 0 2.1-.9 3.9-.9 1.2 0 3.3.6 4.7 2.4-4 2.2-3.3 7.9 0 9.3"/></svg><span>Continue with Apple</span></button>
+        <div id="loginMessage" class="auth-message" aria-live="polite"></div>
+      </form>
+
+      <form id="signupForm" class="auth-form recovery-form auth-card" hidden>
+        <div class="auth-form-heading"><h2>Create account.</h2><p class="account-copy">A home for your research.</p></div>
+        <div class="account-name-grid">
+          <label>
+            First name
+            <input id="signupFirstName" type="text" autocomplete="given-name" required />
+          </label>
+          <label>
+            Last name
+            <input id="signupLastName" type="text" autocomplete="family-name" required />
+          </label>
+        </div>
+        <label>
+          Email
+          <input id="signupEmail" type="email" autocomplete="email" required />
+        </label>
+        <label>
+          Password
+          <input id="signupPassword" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <label>
+          Confirm password
+          <input id="signupPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <button id="signupSubmit" class="auth-primary" type="submit">Create Account</button>
+        <div class="auth-switch"><span>Already a member?</span><button id="signupBack" class="auth-link" type="button">Sign in</button></div>
+        <div class="auth-divider auth-divider-apple"><span>or continue with</span></div>
+        <button class="apple-signin-button" type="button" data-apple-intent="signin" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 1.5c.1 1.2-.4 2.4-1.1 3.2-.8.9-1.9 1.4-3 1.3-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.4 3-1.4M20.5 17.2c-.5 1.2-.8 1.7-1.5 2.8-.9 1.4-2.2 3.1-3.8 3.1-1.4 0-1.8-.9-3.7-.9-1.8 0-2.3.9-3.7.9-1.5 0-2.7-1.5-3.6-2.9C1.6 16.3 1 10.8 3 7.9c1.4-2.1 3.6-2.4 5-2.4 1.6 0 2.6.9 3.9.9 1.3 0 2.1-.9 3.9-.9 1.2 0 3.3.6 4.7 2.4-4 2.2-3.3 7.9 0 9.3"/></svg><span>Continue with Apple</span></button>
+        <div id="signupMessage" class="auth-message" aria-live="polite"></div>
+      </form>
+
+      <form id="forgotPasswordForm" class="auth-form recovery-form auth-card" hidden>
+        <span class="eyebrow">PASSWORD RECOVERY</span>
+        <h3>Reset your password.</h3>
+        <p class="account-copy">Enter the email connected to your Science By Hugs account.</p>
+        <label>
+          Email
+          <input id="forgotPasswordEmail" type="email" autocomplete="email" required />
+        </label>
+        <button id="forgotPasswordSubmit" class="auth-primary" type="submit">Send Reset Email</button>
+        <button id="forgotPasswordBack" class="auth-link" type="button">Back to sign in</button>
+        <div id="forgotPasswordMessage" class="auth-message" aria-live="polite"></div>
+      </form>
+
+      <form id="recoveryPasswordForm" class="auth-form recovery-form auth-card" hidden>
+        <span id="passwordSetupEyebrow" class="eyebrow">SECURE RECOVERY</span>
+        <h3 id="passwordSetupTitle">Choose a new password.</h3>
+        <p id="passwordSetupCopy" class="account-copy">Create a secure password for your Science By Hugs account.</p>
+        <label>
+          New password
+          <input id="recoveryPassword" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <label>
+          Confirm new password
+          <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <button id="recoveryPasswordSubmit" class="auth-primary" type="submit">Set New Password</button>
+        <div id="recoveryPasswordMessage" class="auth-message" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <section id="appleProfileSetup" hidden>
+      <h2>Finish your NEXUS profile</h2><p>Already a customer? Use your existing sign-in, then connect Apple in Account settings to keep your customer number and orders.</p>
+      <button id="appleUseExisting" type="button" class="auth-secondary">Use my existing account</button>
+      <form id="appleProfileForm" class="auth-form"><label>First name<input id="appleFirstName" autocomplete="given-name" maxlength="80" required></label><label>Last name<input id="appleLastName" autocomplete="family-name" maxlength="80" required></label><button type="submit" class="auth-primary">Create my NEXUS profile</button><p role="status" id="appleProfileMessage" aria-live="polite"></p></form>
+    </section>
+    <div id="signedInView" hidden>
+      <div id="accountHubView" class="account-hub-view">
+        <div class="account-welcome">
+          <div class="account-profile-heading"><span class="profile-avatar" data-profile-avatar aria-hidden="true">?</span><span class="eyebrow">YOUR ACCOUNT</span></div>
+          <h2 id="accountWelcome">Welcome to the Nexus.</h2>
+
+          <div class="account-identity-strip">
+            <span id="accountCustomerId">—</span>
+            <i></i>
+            <span id="accountMembership">—</span>
+            <i></i>
+            <span id="accountStatus">—</span>
+          </div>
+          <div id="accountBenefits" class="account-benefits" hidden></div>
+          <span id="accountName" class="account-hidden-identity"></span>
+          <span id="accountEmail" class="account-hidden-identity"></span>
+        </div>
+
+        <div class="account-hub-actions">
+          <button id="manageAccountButton" class="account-hub-card" type="button">
+            <span class="account-hub-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg></span>
+            <span><strong>Manage Account</strong><small>Photo, profile, notifications & security</small></span>
+            <b>→</b>
+          </button>
+          <button id="membershipButton" class="account-hub-card" type="button"><span class="account-hub-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span><span><strong>My Membership</strong><small>Your plan and member benefits</small></span><b>→</b></button>
+          <button id="orderActivityButton" class="account-hub-card" type="button">
+            <span class="account-hub-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6M9 9h6M9 13h6M9 17h4"/></svg></span>
+            <span><strong>Order Activity</strong><small>Orders, payments & invoices</small></span>
+            <b>→</b>
+          </button>
+          <button id="accountReferralButton" class="account-hub-card" type="button">
+            <span class="account-hub-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12l8-5M8 12l8 5"/><circle cx="5" cy="12" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="19" cy="19" r="3"/></svg></span>
+            <span><strong>Refer a Friend</strong><small>Share Nexus & view referral progress</small></span>
+            <b>→</b>
+          </button>
+          <button id="logoutButton" class="account-hub-card account-hub-signout" type="button">
+            <span class="account-hub-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M9 12h12M17 8l4 4-4 4"/></svg></span>
+            <span><strong>Sign Out</strong><small>Securely end this Nexus session</small></span>
+            <b>→</b>
+          </button>
+        </div>
+      </div>
+
+      <div id="accountManageView" class="account-subview" hidden>
+        <button id="backFromManageAccount" class="subpage-back-button account-subview-back" type="button">← Back to Account</button>
+        <div class="account-subview-heading">
+          <span class="eyebrow">ACCOUNT CONTROL</span>
+          <h2>Manage Account</h2>
+          <p>Your profile, preferences, and security.</p>
+        </div>
+
+        <section class="profile-photo-panel" data-photo-panel aria-label="Profile photo">
+    <span class="profile-avatar" data-profile-avatar aria-hidden="true">?</span><div class="profile-photo-controls"><strong>Profile photo</strong>
+    <p>Shared between your Nexus and Core accounts.</p>
+    <div class="profile-photo-actions"><button type="button" data-photo-choose>Upload photo</button><button type="button" data-photo-remove hidden>Remove</button></div>
+    <input type="file" data-photo-file accept="image/jpeg,image/png,image/webp" hidden>
+    <small>JPG, PNG or WebP · up to 10 MB</small><p data-photo-status role="status" aria-live="polite"></p></div>
+  </section>
+        <form id="accountManageForm" class="auth-form account-manage-form">
+          <div class="account-name-grid">
+            <label>
+              First name
+              <input id="manageFirstName" type="text" autocomplete="given-name" required />
+            </label>
+            <label>
+              Last name
+              <input id="manageLastName" type="text" autocomplete="family-name" required />
+            </label>
+          </div>
+          <label>
+            Phone number
+            <input id="managePhone" type="tel" autocomplete="tel" />
+          </label>
+          <label>
+            Email
+            <input id="manageEmail" type="email" autocomplete="email" required />
+          </label>
+          <button id="accountManageSubmit" class="auth-primary" type="submit">Save Account Changes</button>
+          <div id="accountManageMessage" class="auth-message" aria-live="polite"></div>
+        </form>
+
+        <section class="account-notifications"><div class="account-section-heading"><h3>Notifications & updates</h3><p>Choose how you hear from Science By Hugs.</p></div><section class="push-panel" aria-label="Push notifications"><strong>Notifications</strong><p>Allow alerts on this iPhone. Notification previews keep account details private.</p><p data-push-status role="status" aria-live="polite">Checking this device…</p><div class="push-actions"><button data-push-toggle type="button" disabled>Enable notifications</button><button data-push-test type="button" hidden>Send test notification</button></div></section><details class="communication-preferences" data-marketing-panel><summary><span><strong>Email & text updates</strong><small>Optional news, offers and member updates</small></span><span aria-hidden="true">+</span></summary><div class="communication-content"><fieldset class="marketing-consent" data-marketing-fields="account"><legend>Email & text preferences</legend><label class="marketing-choice"><input type="checkbox" data-email-consent><span>I agree to receive marketing emails from Science By Hugs about NEXUS, PULSE, products, offers, and updates. I can unsubscribe at any time.</span></label><input type="hidden" data-marketing-phone><p class="communication-destination" data-marketing-phone-label></p><label class="marketing-choice"><input type="checkbox" data-sms-consent><span>By checking this box and submitting, I electronically sign and agree to receive recurring marketing SMS texts from Science By Hugs at the number I provide, including texts sent using automated technology. Consent is not a condition of purchase or account creation. Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help; contact legal@sciencebyhugs.com for assistance.</span></label><p>These choices are optional and separate from device notifications. <a href="https://sbh-nexus-v2-staging.pages.dev/policies.html#privacy" target="_blank" rel="noopener">Privacy Policy</a> · <a href="https://sbh-nexus-v2-staging.pages.dev/policies.html#communications" target="_blank" rel="noopener">Messaging Terms</a></p></fieldset><button type="button" class="auth-secondary" data-save-marketing disabled>Save preferences</button><p data-marketing-status role="status" aria-live="polite"></p></div></details></section>
+        <section class="account-security-shell account-manage-security">
+          <section class="biometric-settings"><h3>Biometric Unlock</h3><p data-biometric-status>Checking device support…</p><button data-biometric-toggle type="button" class="auth-secondary" disabled>Enable Biometric Unlock</button><p data-biometric-message role="status" aria-live="polite"></p></section>
+          <section class="apple-account-panel"><h3>Sign in with Apple</h3><p>Connect Apple while signed in to keep this account, membership and order history.</p><button class="apple-signin-button" type="button" data-apple-intent="link" disabled><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 1.5c.1 1.2-.4 2.4-1.1 3.2-.8.9-1.9 1.4-3 1.3-.1-1.1.4-2.3 1.1-3.1.8-.9 2-1.4 3-1.4M20.5 17.2c-.5 1.2-.8 1.7-1.5 2.8-.9 1.4-2.2 3.1-3.8 3.1-1.4 0-1.8-.9-3.7-.9-1.8 0-2.3.9-3.7.9-1.5 0-2.7-1.5-3.6-2.9C1.6 16.3 1 10.8 3 7.9c1.4-2.1 3.6-2.4 5-2.4 1.6 0 2.6.9 3.9.9 1.3 0 2.1-.9 3.9-.9 1.2 0 3.3.6 4.7 2.4-4 2.2-3.3 7.9 0 9.3"/></svg><span>Connect Apple</span></button><p id="appleLinkMessage" role="status" aria-live="polite"></p></section>
+          <div class="account-history-heading">
+            <div>
+              <span class="eyebrow">SECURITY</span>
+              <h3>Change password</h3>
+            </div>
+          </div>
+          <form id="changePasswordForm" class="auth-form compact-auth-form">
+            <label>
+              Current password
+              <input id="currentPassword" type="password" autocomplete="current-password" required />
+            </label>
+            <label>
+              New password
+              <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required />
+            </label>
+            <label>
+              Confirm new password
+              <input id="confirmNewPassword" type="password" autocomplete="new-password" minlength="8" required />
+            </label>
+            <button id="changePasswordSubmit" class="auth-primary" type="submit">Change Password</button>
+            <div id="changePasswordMessage" class="auth-message" aria-live="polite"></div>
+          </form>
+        </section>
+      </div>
+
+      <div id="accountMembershipView" class="account-subview" hidden><button id="backFromMembership" class="subpage-back-button" type="button">← Back to Account</button><div id="membershipContent"></div></div>
+      <div id="accountOrdersView" class="account-subview" hidden>
+        <button id="backFromOrderActivity" class="subpage-back-button account-subview-back" type="button">← Back to Account</button>
+        <section class="account-history-shell account-orders-shell">
+          <div class="account-history-heading">
+            <div>
+              <span class="eyebrow">ORDER ACTIVITY</span>
+              <h3>Orders & invoices</h3>
+            </div>
+            <button id="refreshHistoryButton" class="history-refresh" type="button">Refresh</button>
+          </div>
+          <div id="accountHistory" class="account-history">
+            <div class="history-state">Loading history…</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </dialog>
+</div><script type="module" src="/design-review.ts"></script></body></html>

@@ -1,0 +1,43 @@
+/* Calm, compact authentication. Scoped away from signed-in account screens. */
+#app .auth-sheet-wordmark{display:none}
+#app #accountDialog:has(#signedOutView:not([hidden])),
+#app #accountDialog:has(#appleProfileSetup:not([hidden])){
+ background:linear-gradient(180deg,#061422c9,#06121ff5 280px,#06121f),url('/orbit-horizon-v3.png') center top/auto 600px no-repeat;
+}
+#app #accountDialog:has(#signedOutView:not([hidden])) .sheet-topbar,
+#app #accountDialog:has(#appleProfileSetup:not([hidden])) .sheet-topbar{
+ background:transparent;border-bottom:0;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+}
+#app #accountDialog:has(#signedOutView:not([hidden])) .sheet-topbar>strong,
+#app #accountDialog:has(#appleProfileSetup:not([hidden])) .sheet-topbar>strong{display:none}
+#app #accountDialog:has(#signedOutView:not([hidden])) .auth-sheet-wordmark,
+#app #accountDialog:has(#appleProfileSetup:not([hidden])) .auth-sheet-wordmark{display:inline-flex;font-size:29px;line-height:1;letter-spacing:-1.5px}
+#app #accountDialog:has(#signedOutView:not([hidden])) .dialog-close,
+#app #accountDialog:has(#appleProfileSetup:not([hidden])) .dialog-close{background:#0b1e2d;border:1px solid #00d3ec45;box-shadow:none;font-size:26px}
+#app #signedOutView,#app #appleProfileSetup{max-width:380px;margin:0 auto;width:100%;padding:0 2px 12px}
+#app #signedOutView .auth-brand-panel{margin:0 0 22px;padding:0;gap:0;min-height:0}
+#app #signedOutView :is(.auth-brand-panel h2,.auth-form-heading h2),#app #appleProfileSetup h2{font-size:26px;line-height:1.2;letter-spacing:-.7px;font-weight:650;margin:0 0 7px}
+#app #signedOutView .account-copy{display:block;font-size:14px;line-height:1.5;margin:0;color:#9eafc2}
+#app #signedOutView .auth-form{gap:14px;margin:0;padding:0;border:0;background:none;box-shadow:none}
+#app #signedOutView .auth-form-heading{margin-bottom:6px}
+#app #signedOutView .auth-form label{gap:7px;font-size:12px;font-weight:500;color:#bdcbd9;letter-spacing:0}
+#app #signedOutView .auth-form input{height:48px;min-height:48px;border:1px solid #304457;border-radius:10px;background:#0d1e2c;color:#f2f6fa;font-size:16px;padding:11px 13px;box-shadow:none}
+#app #signedOutView .password-field input{padding-right:68px}
+#app #signedOutView .auth-form input:focus{border-color:#45c7df;outline:2px solid #45c7df33;outline-offset:1px}
+#app #signedOutView .password-visibility{border:0;background:transparent;box-shadow:none;color:#a2b6ca;font-size:12px;min-width:52px;min-height:44px}
+#app #signedOutView .account-name-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+#app #signedOutView .apple-signin-button{height:48px;min-height:48px;border:1px solid #25394b;border-radius:10px;background:#000;color:#fff;box-shadow:none;font-size:16px;font-weight:600;letter-spacing:-.2px;padding:10px 16px;gap:9px}
+#app #signedOutView .apple-signin-button svg{height:20px;width:18px}
+#app #signedOutView .auth-divider{font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin:1px 0;color:#94a6b8;gap:14px}
+#app #signedOutView .auth-divider-apple{margin-top:4px;margin-bottom:-2px}
+#app #signedOutView .auth-divider:before,#app #signedOutView .auth-divider:after{background:#273a4b}
+#app #signedOutView .auth-primary{width:100%;min-height:48px;border-radius:10px;font-size:15px;font-weight:650;box-shadow:none;letter-spacing:0;padding:12px 16px}
+#app #signedOutView .auth-link{min-height:44px;padding:10px 4px;background:transparent;border:0;border-radius:6px;box-shadow:none;color:#84d7e9;font-size:13px;font-weight:500;line-height:1.5;text-decoration:none}
+#app #signedOutView .auth-forgot-link{justify-self:end;margin-top:-12px;margin-bottom:-10px}
+#app #signedOutView .auth-switch{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:2px;color:#a4b4c5;font-size:13px;flex-wrap:wrap}
+#app #signedOutView .auth-message:empty{display:none}
+#app #signedOutView .auth-message{margin:0;font-size:13px;line-height:1.5}
+#app #signedOutView button:focus-visible{outline:2px solid #58d4ed;outline-offset:3px}
+#app #signedOutView .recovery-form>h3{font-size:26px;letter-spacing:-.7px;line-height:1.2;margin:0}
+@media(min-width:601px){#app #accountDialog:has(#signedOutView:not([hidden])){max-width:460px}}
+@media(max-width:360px){#app #signedOutView .auth-form{gap:12px}#app #signedOutView :is(.auth-brand-panel h2,.auth-form-heading h2){font-size:24px}}

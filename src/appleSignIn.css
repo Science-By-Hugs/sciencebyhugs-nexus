@@ -1,0 +1,7 @@
+#app .apple-signin-button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;width:100%;border:1px solid #25394b;border-radius:10px;background:#000;color:#fff;font-size:16px;font-weight:600;padding:12px 16px}
+#app .apple-signin-button svg{width:20px;height:22px;flex-shrink:0}
+#app .apple-signin-button:disabled{opacity:.65;cursor:not-allowed;border-color:#25394b}
+#app .apple-account-panel{padding:16px;border:1px solid var(--line);border-radius:14px;background:#091827;margin-bottom:22px}
+#app .apple-account-panel h3{font-size:18px;margin:0 0 8px}
+#app .apple-account-panel p,#app #appleProfileSetup p{font-size:13px;line-height:1.6;color:var(--muted)}
+#app #appleProfileForm{margin-top:20px}

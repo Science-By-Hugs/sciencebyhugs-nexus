@@ -49,3 +49,7 @@ npm run build
 <p align="center">
   <img src="public/brand/science-by-hugs.svg" alt="Science By Hugs" width="520" />
 </p>
+
+## 2.0 staging development branch
+
+This branch is staging-only and must not be merged into production main. Read [Day 1 setup](docs/V2-DAY1.md), [beta scope](docs/V2-BETA-SCOPE.md), and [staging plan](docs/V2-STAGING-PLAN.md) before running or provisioning it. Explicit staging settings are required; CI builds fixtures without deploying.

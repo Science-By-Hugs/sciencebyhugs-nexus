@@ -1,3 +1,4 @@
+import { assertTestPaymentsEnabled } from '../config'
 import { supabase } from './supabase'
 import type { CartItem } from './cart'
 
@@ -28,6 +29,7 @@ export async function createCheckoutOrder(
     paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle'
   },
 ): Promise<CheckoutOrderResult> {
+  assertTestPaymentsEnabled()
   const { data, error } = await supabase.functions.invoke('create-checkout-order', {
     method: 'POST',
     body: {

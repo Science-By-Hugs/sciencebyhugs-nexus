@@ -19,3 +19,28 @@ test('US local, formatted, leading 1 and international numbers normalize without
  assert.equal(api.displayMarketingPhone('+17025551234'),'7025551234')
  assert.equal(api.displayMarketingPhone('+447700900123'),'+447700900123')
 })
+
+test('account preferences reuse the saved profile phone without a second visible input',()=>{
+ const{api}=setup();const markup=api.marketingFields('account')
+ assert.match(markup,/type="hidden" data-marketing-phone/)
+ assert.doesNotMatch(markup,/type="tel"/)
+ assert.match(api.marketingPanel(),/communication-preferences/)
+})
+test('changing the profile phone never transfers an SMS opt-in to the new number',()=>{
+ const{api}=setup();const root=fields(false,true,'');const label={textContent:''};const original=root.querySelector
+ root.querySelector=key=>key==='[data-marketing-phone-label]'?label:original(key)
+ api.applyAccountMarketingPhone(root,'7025551234','+17025551234',true)
+ assert.equal(root.querySelector('[data-sms-consent]').checked,true)
+ api.applyAccountMarketingPhone(root,'7025559999','+17025551234',true)
+ assert.equal(root.querySelector('[data-sms-consent]').checked,false)
+ assert.equal(root.querySelector('[data-marketing-phone]').value,'+17025559999')
+ assert.match(label.textContent,/7025559999/)
+ api.applyAccountMarketingPhone(root,'','+17025551234',true)
+ assert.equal(root.querySelector('[data-sms-consent]').disabled,true)
+ assert.equal(root.querySelector('[data-sms-consent]').checked,false)
+})
+test('a stale preferences panel cannot save consent under a different account',async()=>{
+ const{api,calls}=setup({id:'other',email:'other@example.com'})
+ await assert.rejects(api.saveMarketing(fields(true,false),'nexus','account','original'),/account changed/)
+ assert.equal(calls.length,0)
+})

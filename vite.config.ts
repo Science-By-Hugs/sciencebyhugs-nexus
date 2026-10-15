@@ -1,9 +1,22 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
+import { validateV2Environment } from './src/environment'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const base = process.env.VITE_BASE_PATH || '/'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  for (const name of Object.keys(env)) {
+    if (/SECRET|PASSWORD|SERVICE_ROLE|TOKEN|PRIVATE_KEY/.test(name)) throw new Error('Secret-like VITE variable is forbidden: ' + name)
+  }
+  validateV2Environment({
+    appEnv: env.VITE_APP_ENV, supabaseUrl: env.VITE_SUPABASE_URL,
+    publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY, expectedProjectRef: env.VITE_EXPECTED_SUPABASE_REF,
+    appOrigin: env.VITE_APP_ORIGIN, paymentEnv: env.VITE_PAYMENT_ENV,
+    enableTestPayments: env.VITE_ENABLE_TEST_PAYMENTS,
+  })
+  return {
+  server: { port: 5173, strictPort: true },
   base,
   build: {
     rollupOptions: {
@@ -24,13 +37,13 @@ export default defineConfig({
         skipWaiting: true,
         navigateFallbackDenylist: [/\.vcf$/i],
       },
-      includeAssets: ['brand/science-by-hugs.svg', 'brand/sbh-monogram.svg', 'brand/nexus.svg', 'brand/nexus-app-icon.svg', 'default-product-vial-photo.webp', 'science-by-hugs-contact.vcf'],
+      includeAssets: ['brand/science-by-hugs.svg', 'brand/sbh-monogram.svg', 'brand/nexus.svg', 'brand/nexus-app-icon.svg', 'orbit-horizon-v3.png', 'science-by-hugs-vial-v3.png', 'science-by-hugs-contact.vcf'],
       manifest: {
-        name: 'Science By Hugs Nexus',
-        short_name: 'Nexus',
+        name: 'NEXUS 2.0 — Internal Staging',
+        short_name: 'NEXUS Test',
         description: 'NEXUS — Explore. Connect. Order. Customer research portal by Science By Hugs.',
-        theme_color: '#0A0A0B',
-        background_color: '#0A0A0B',
+        theme_color: '#020b16',
+        background_color: '#020b16',
         display: 'standalone',
         start_url: base,
         scope: base,
@@ -45,4 +58,5 @@ export default defineConfig({
       },
     }),
   ],
+  }
 })

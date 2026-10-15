@@ -1,13 +1,17 @@
+import { Capacitor } from '@capacitor/core'
+import { nativePushStatus, enableNativePush, disableNativePush, testNativePush, bindNativeNotificationNavigation } from './nativePush'
 import { supabase } from './services/supabase'
 
 const functionName = 'app-push'
 const appName = 'nexus'
+const nativePushUnavailable = 'Push notifications are not available in this TestFlight build yet.'
 
 function supported() {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
 async function registration() {
+  if (Capacitor.isNativePlatform()) throw new Error(nativePushUnavailable)
   if (!supported()) throw new Error('Install this app to your Home Screen on iPhone/iPad, then open it to enable notifications. This browser may not support push.')
   return Promise.race([
     navigator.serviceWorker.ready,
@@ -35,6 +39,7 @@ function applicationKey(key: string) {
 }
 
 export async function pushEnabled() {
+  if (Capacitor.isNativePlatform()) return (await nativePushStatus()).enabled
   if (!supported() || Notification.permission !== 'granted') return false
   const sub = await (await registration()).pushManager.getSubscription()
   if (!sub) return false
@@ -43,6 +48,7 @@ export async function pushEnabled() {
 }
 
 export async function enablePush() {
+  if (Capacitor.isNativePlatform()) return enableNativePush()
   if (!supported()) await registration()
   // Permission must be requested directly in the user's click handler on iOS.
   const permission = await Notification.requestPermission()
@@ -63,6 +69,7 @@ export async function enablePush() {
 }
 
 export async function disablePush() {
+  if (Capacitor.isNativePlatform()) return disableNativePush()
   if (!supported()) return
   const sub = await (await registration()).pushManager.getSubscription()
   if (!sub) return
@@ -72,6 +79,7 @@ export async function disablePush() {
 }
 
 export async function testPush() {
+  if (Capacitor.isNativePlatform()) return testNativePush()
   const sub = await (await registration()).pushManager.getSubscription()
   if (!sub) throw new Error('Enable notifications on this device first.')
   const result = await api('test', sub)
@@ -79,9 +87,10 @@ export async function testPush() {
 }
 
 export function pushPanel() {
+  if (Capacitor.isNativePlatform()) return `<section class="push-panel" aria-label="Push notifications"><strong>Notifications</strong><p>Allow alerts on this iPhone. Notification previews keep account details private.</p><p data-push-status role="status" aria-live="polite">Checking this device…</p><div class="push-actions"><button data-push-toggle type="button" disabled>Enable notifications</button><button data-push-test type="button" hidden>Send test notification</button></div></section>`
   return `<section class="push-panel" aria-label="Push notifications">
     <strong>Push notifications</strong>
-    <p>Get order, payment, and estimated delivery updates even when NEXUS is closed. On iPhone/iPad, open the app from your Home Screen first.</p>
+    <p>${Capacitor.isNativePlatform() ? 'Manage notifications for this iPhone. Enable notifications, then send a test to check delivery.' : 'Manage notifications for this browser. On iPhone or iPad, open the installed Home Screen app to enable browser notifications.'}</p>
     <p data-push-status role="status" aria-live="polite">Checking this device…</p>
     <div class="push-actions"><button type="button" data-push-toggle disabled>Enable notifications</button>
     <button type="button" data-push-test hidden>Send test notification</button></div>
@@ -89,6 +98,7 @@ export function pushPanel() {
 }
 
 export function pushPrompt() {
+  if (Capacitor.isNativePlatform()) return ''
   return `<aside class="push-prompt push-prompt-popup" data-push-prompt hidden aria-label="Enable notifications">
     <p>We noticed you don’t have notifications enabled.</p>
     <div class="push-prompt-actions"><button type="button" data-push-enable>Enable notifications</button><button type="button" data-push-dismiss>Not now</button></div>
@@ -116,6 +126,54 @@ export async function bindPushPanel(userId = '') {
   if (prompt) prompt.hidden = true
   if (promptStatus) promptStatus.textContent = ''
   if (!userId) { button.disabled = true; return }
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await bindNativeNotificationNavigation()
+      const nativeStatus = await nativePushStatus()
+      if (version !== bindingVersion) return
+      if (!nativeStatus.available) {
+        button.disabled = true
+        status.textContent = 'Native notifications are being configured. Please try again later.'
+        return
+      }
+      let enabled = nativeStatus.enabled
+      const updateNative = () => {
+        button.disabled = false
+        button.textContent = enabled ? 'Turn off on this device' : 'Enable notifications'
+        test.hidden = !enabled
+        status.textContent = enabled ? 'Enabled on this iPhone.' : 'Not enabled on this iPhone.'
+      }
+      updateNative()
+      button.onclick = async () => {
+        button.disabled = true
+        test.disabled = true
+        try {
+          if (enabled) await disableNativePush(); else await enableNativePush()
+          if (version !== bindingVersion) return
+          enabled = !enabled
+          updateNative()
+        } catch (error) {
+          if (version !== bindingVersion) return
+          updateNative()
+          status.textContent = error instanceof Error ? error.message : 'Could not update notifications.'
+        } finally { test.disabled = false }
+      }
+      test.onclick = async () => {
+        test.disabled = true
+        try {
+          await testNativePush()
+          if (version === bindingVersion) status.textContent = 'Apple accepted the test. Check your notifications.'
+        } catch (error) {
+          if (version === bindingVersion) status.textContent = error instanceof Error ? error.message : 'Could not send the test.'
+        } finally { test.disabled = false }
+      }
+    } catch (error) {
+      if (version !== bindingVersion) return
+      button.disabled = true
+      status.textContent = error instanceof Error ? error.message : 'Could not check notification settings.'
+    }
+    return
+  }
   const dismissalKey = `nexus-push-prompt-dismissed:${userId}`
   let dismissed = false
   try { dismissed = sessionStorage.getItem(dismissalKey) === 'true' } catch {}

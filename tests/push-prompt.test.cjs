@@ -7,7 +7,7 @@ const path=require('node:path')
 const source=fs.readFileSync(path.join(__dirname,'../src/push.ts'),'utf8').replace(/^import .*$/gm,'')
 const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
 const tick=()=>new Promise(resolve=>setImmediate(resolve))
-async function setup({enabled=false,statusError=false,permission='default',userId='user-one',dismissed=false}={}){
+async function setup({native=false,nativeAvailable=true,enabled=false,statusError=false,permission='default',userId='user-one',dismissed=false}={}){
  const nodes=new Map()
  const node=key=>{if(!nodes.has(key))nodes.set(key,{dataset:{},hidden:true,disabled:false,textContent:'',events:{},addEventListener(event,fn){this.events[event]=fn},querySelector:node});return nodes.get(key)}
  const panel=node('.push-panel'),prompt=node('[data-push-prompt]')
@@ -17,7 +17,7 @@ async function setup({enabled=false,statusError=false,permission='default',userI
  let hasSubscription=enabled
  const notification={permission:enabled?'granted':permission,async requestPermission(){calls.push('permission');notification.permission='granted';return 'granted'}}
  const memory=new Map(dismissed?[['nexus-push-prompt-dismissed:'+userId,'true']]:[])
- const context={sessionStorage:{getItem:key=>memory.get(key),setItem:(key,value)=>memory.set(key,value)},exports:{},Error,Response,Uint8Array,atob,setTimeout:()=>0,navigator:{serviceWorker:{ready:Promise.resolve({pushManager:{async getSubscription(){return hasSubscription?subscription:null},async subscribe(){hasSubscription=true;calls.push('subscribe');return subscription}}})}},window:{PushManager:{},Notification:notification},Notification:notification,document:{querySelector:node},supabase:{functions:{async invoke(_name,{body}){calls.push(body.action);if(body.action==='status'&&statusError)return {error:new Error('Offline')};return {data:body.action==='status'?{enabled}:body.action==='config'?{publicKey:'AQID'}:{sent:true}}}}}}
+ const context={nativePushStatus:async()=>({enabled,available:nativeAvailable}),bindNativeNotificationNavigation:async()=>{},enableNativePush:async()=>calls.push('native-enable'),disableNativePush:async()=>calls.push('native-disable'),testNativePush:async()=>calls.push('native-test'),Capacitor:{isNativePlatform:()=>native},sessionStorage:{getItem:key=>memory.get(key),setItem:(key,value)=>memory.set(key,value)},exports:{},Error,Response,Uint8Array,atob,setTimeout:()=>0,navigator:{serviceWorker:{ready:Promise.resolve({pushManager:{async getSubscription(){return hasSubscription?subscription:null},async subscribe(){hasSubscription=true;calls.push('subscribe');return subscription}}})}},window:{PushManager:{},Notification:notification},Notification:notification,document:{querySelector:node},supabase:{functions:{async invoke(_name,{body}){calls.push(body.action);if(body.action==='status'&&statusError)return {error:new Error('Offline')};return {data:body.action==='status'?{enabled}:body.action==='config'?{publicKey:'AQID'}:{sent:true}}}}}}
  vm.runInNewContext(code,context)
  await context.exports.bindPushPanel(userId)
  return {node,calls,prompt,memory,api:context.exports}
@@ -52,3 +52,22 @@ test('Not now dismisses the popup for this signed-in account and session',async(
  const s=await setup();s.node('[data-push-dismiss]').onclick();assert.equal(s.prompt.hidden,true);assert.equal(s.memory.get('nexus-push-prompt-dismissed:user-one'),'true')
  const dismissed=await setup({dismissed:true});assert.equal(dismissed.prompt.hidden,true)
 })
+
+test('native builds use native controls without invoking browser push',async()=>{
+ const s=await setup({native:true});
+ assert.equal(s.prompt.hidden,true);
+ assert.equal(s.node('[data-push-toggle]').disabled,false);
+ assert.match(s.node('[data-push-status]').textContent,/iPhone/);
+ assert.equal(s.api.pushPrompt(),'');
+ await s.node('[data-push-toggle]').onclick();
+ assert.deepEqual(s.calls,['native-enable']);
+ assert.equal(s.node('[data-push-test]').hidden,false);
+ await s.node('[data-push-test]').onclick();
+ assert.deepEqual(s.calls,['native-enable','native-test']);
+});
+test('unconfigured native service keeps notification control disabled',async()=>{
+ const s=await setup({native:true,nativeAvailable:false});
+ assert.equal(s.node('[data-push-toggle]').disabled,true);
+ assert.match(s.node('[data-push-status]').textContent,/being configured/);
+ assert.deepEqual(s.calls,[]);
+});

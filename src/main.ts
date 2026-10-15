@@ -1,8 +1,26 @@
-import { marketingFields, marketingPanel, bindMarketing, saveMarketing, readMarketing } from './marketing'
+import { appleButton, bindAppleButtons, authenticateWithApple } from './appleSignIn'
+import './appleSignIn.css'
+import { biometricPanel, initBiometricUnlock, setBiometricAccount } from './biometricUnlock'
+import './biometricUnlock.css'
+import { supabase } from './services/supabase'
+import { Capacitor } from '@capacitor/core'
+import { bindVisibleViewport } from './viewport'
+import { icon } from './icons'
+import { openDialog, bindSheetHeaders } from './dialogNavigation'
+import { membershipBenefits } from './membership'
+import { bindPasswordVisibility } from './authControls'
+import { ENABLE_TEST_PAYMENTS } from './config'
+import { marketingPanel, bindMarketing, resetMarketingPreferences } from './marketing'
 import { avatarMarkup, avatarPanel, bindAvatars } from './avatar'
 import { pushPanel, pushPrompt, bindPushPanel, disablePush } from './push'
 import './styles.css'
 import './brand.css'
+import './minimal.css'
+import './orbit.css'
+import './fluid.css'
+import './refinement.css'
+import './compact.css'
+import './authRedesign.css'
 import { registerSW } from 'virtual:pwa-register'
 import { fetchCatalog, type CatalogProduct } from './services/catalog'
 import {
@@ -47,7 +65,7 @@ import {
   type ReferralDashboard,
 } from './services/referrals'
 
-registerSW({
+if (!Capacitor.isNativePlatform()) registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return
@@ -57,14 +75,27 @@ registerSW({
   },
 })
 
+bindVisibleViewport()
+
+document.body.classList.toggle('native-app', Capacitor.isNativePlatform())
+
+const stagingLabel = document.createElement('div')
+stagingLabel.id = 'staging-environment-label'
+stagingLabel.textContent = 'NEXUS 2.0 · INTERNAL STAGING · TEST ACCOUNTS ONLY'
+stagingLabel.setAttribute('role', 'status')
+document.body.prepend(stagingLabel)
+
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('App root not found')
 
 let products: CatalogProduct[] = []
 let selectedCategory = 'All'
+let appleAuthBusy = false
+let appleProfileSetup = false
 let query = ''
 let currentProfile: NexusProfile | null = null
 let accountHistory: NexusOrderHistory[] = []
+let homeHistoryState: 'loading' | 'ready' | 'error' = 'ready'
 let cart: CartItem[] = loadCart()
 let activeCheckoutOrder: CheckoutOrderResult | null = null
 let activeCheckoutPaymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle' | null = null
@@ -80,8 +111,7 @@ if (incomingReferralCode) {
   window.localStorage.setItem('sbh_referral_code', incomingReferralCode.trim())
 }
 
-const nexusLogoUrl = `${import.meta.env.BASE_URL}brand/nexus.svg`
-const defaultProductImageUrl = `${import.meta.env.BASE_URL}default-product-vial-photo.webp?v=2`
+const defaultProductImageUrl = `${import.meta.env.BASE_URL}science-by-hugs-vial-v3.png`
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -140,7 +170,7 @@ app.innerHTML = `
   <section id="entryGate" class="entry-gate" aria-labelledby="entryGateTitle" style="--entry-vial:url('${defaultProductImageUrl}')" ${hasValidEntryAcknowledgment() ? 'hidden' : ''}>
     <div class="entry-gate-backdrop" aria-hidden="true"></div>
     <div class="entry-gate-card">
-      <img class="entry-gate-logo" src="${nexusLogoUrl}" alt="Nexus — Science By Hugs" />
+      <span class="entry-gate-logo minimal-wordmark" aria-label="Nexus">nexus<b class="wordmark-dot">.</b></span>
       <div class="entry-gate-atom" aria-hidden="true">⚛</div>
       <span class="entry-gate-kicker">RESEARCH ACCESS CONFIRMATION</span>
       <h1 id="entryGateTitle">Before entering <em>Nexus.</em></h1>
@@ -192,14 +222,14 @@ app.innerHTML = `
 
   <header class="topbar">
     <a class="brand" href="#" aria-label="Science By Hugs Nexus home">
-      <img class="nexus-header-logo" src="${nexusLogoUrl}" alt="Nexus — Science By Hugs" />
+      <span class="minimal-wordmark">nexus<b class="wordmark-dot">.</b><span>SCIENCE BY HUGS</span></span>
     </a>
 
     <div class="top-actions">
       <span class="system-status"><i></i> CATALOG LIVE</span>
-      <button id="menuButton" class="account-button menu-button" type="button">${avatarMarkup()}<span>Menu</span></button>
-      <button id="cartButton" class="cart-button" type="button">
-        Cart <span id="cartCount">0</span>
+      <button id="menuButton" class="account-button menu-button" type="button" aria-label="Open menu" aria-controls="menuDialog">${avatarMarkup()}<span>Menu</span>${icon("menu")}</button>
+      <button id="cartButton" class="cart-button" type="button" aria-label="Open cart">
+        ${icon("cart")}<span class="cart-label">Cart</span><span id="cartCount">0</span>
       </button>
       <button id="accountButton" class="account-button" type="button">Account</button>
     </div>
@@ -207,24 +237,33 @@ app.innerHTML = `
 
   ${pushPrompt()}
   <main class="shell">
+    <section id="homeScreen" class="home-screen" aria-labelledby="homeGreeting">
+      <div class="home-intro"><h1 id="homeGreeting">Welcome to Nexus.</h1><p>Your research, connected.</p></div>
+      <button id="homeSignInButton" class="home-signin auth-secondary" type="button">Sign in to your account ${icon('chevron')}</button>
+      <button id="latestOrderButton" class="latest-order" type="button"><span class="latest-order-copy"><small>Latest order</small><strong id="latestOrderStatus">Sign in to see your orders</strong><span id="latestOrderNumber">Keep your research in one place.</span></span><span class="text-action">View orders ${icon('chevron')}</span></button>
+
+      <div class="home-section-heading"><h2>Explore the catalog</h2><button id="browseCatalogButton" class="text-action" type="button">Browse catalog ${icon('chevron')}</button></div>
+      <div id="homeProductPreview" class="home-product-preview"><p class="state">Loading the catalog…</p></div>
+    </section>
+    <section id="catalogScreen" hidden aria-labelledby="catalogTitle">
     <section class="hero">
-      <div class="eyebrow">SCIENCE • RESEARCH • DISCOVERY</div>
-      <h1>Enter the <em>Nexus.</em></h1>
-      <p>Explore the live Science By Hugs catalog, powered by our continuously synced research database.</p>
+      <div class="eyebrow">SCIENCE BY HUGS</div>
+      <h1 id="catalogTitle">Research catalog</h1>
+
     </section>
 
     <section class="catalog-shell">
       <div class="toolbar">
         <label class="search">
-          <span>⌕</span>
-          <input id="searchInput" type="search" placeholder="Search the catalog…" autocomplete="off" />
+          <span>${icon("search")}</span>
+          <input id="searchInput" aria-label="Search products" type="search" placeholder="Search products" autocomplete="off" />
         </label>
         <div id="categoryChips" class="chips" aria-label="Catalog categories"></div>
       </div>
 
       <div class="section-heading">
         <div>
-          <span class="eyebrow">LIVE DATABASE</span>
+          <span class="eyebrow">EXPLORE</span>
           <h2>Research Catalog</h2>
         </div>
         <span id="productCount" class="count"></span>
@@ -234,26 +273,15 @@ app.innerHTML = `
         <div class="state"><div class="loader"></div><p>Connecting to Nexus…</p></div>
       </div>
     </section>
+    <p class="catalog-footnote">For research use only.</p>
+    </section>
   </main>
 
   <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
-    <button id="mobileHomeButton" class="mobile-nav-item active" type="button">
-      <span class="mobile-nav-icon">⌂</span>
-      <span>Home</span>
-    </button>
-    <button id="mobileAccountButton" class="mobile-nav-item" type="button">
-      <span class="mobile-nav-icon">◉</span>
-      <span>Account</span>
-    </button>
-    <button id="mobileSupportButton" class="mobile-nav-item" type="button">
-      <span class="mobile-nav-icon">?</span>
-      <span>Support</span>
-    </button>
-    <button id="mobileCartButton" class="mobile-nav-item" type="button">
-      <span class="mobile-nav-icon">◇</span>
-      <span>Cart</span>
-      <b id="mobileCartCount">0</b>
-    </button>
+    <button id="mobileHomeButton" class="mobile-nav-item active" type="button"><span class="mobile-nav-icon">${icon('home')}</span><span>Home</span></button>
+    <button id="mobileCatalogButton" class="mobile-nav-item" type="button"><span class="mobile-nav-icon">${icon('search')}</span><span>Catalog</span></button>
+    <button id="mobileOrdersButton" class="mobile-nav-item" type="button"><span class="mobile-nav-icon">${icon('orders')}</span><span>Orders</span></button>
+    <button id="mobileAccountButton" class="mobile-nav-item" type="button"><span class="mobile-nav-icon">${icon('account')}</span><span>Account</span></button>
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -262,9 +290,9 @@ app.innerHTML = `
   <dialog id="menuDialog" class="menu-dialog">
     <button id="closeMenuDialog" class="dialog-close" aria-label="Close">×</button>
     <div class="menu-head">
-      <span class="eyebrow">NEXUS NAVIGATION</span>
-      <h2>Explore Nexus.</h2>
-      <p>Everything connected to your Science By Hugs account in one place.</p>
+
+      <h2>Explore</h2>
+      <p>Find what you need.</p>
     </div>
     <nav class="menu-grid" aria-label="Nexus menu">
       <button class="menu-card" type="button" data-menu-target="catalog">
@@ -283,12 +311,13 @@ app.innerHTML = `
         <span>POLICIES</span><strong>Policy Library</strong><small>Terms, privacy, shipping, and research policies.</small>
       </button>
     </nav>
+    <button id="menuDoneButton" class="auth-secondary menu-done" type="button">Back to Home</button>
   </dialog>
 
   <dialog id="supportDialog" class="support-dialog">
     <div class="subpage-header">
-      <button id="backSupportToMenu" class="subpage-back-button" type="button">← Back to Menu</button>
-      <button id="closeSupportDialog" class="referral-close-button" aria-label="Close">×</button>
+      <button id="backSupportToMenu" class="subpage-back-button" type="button">← Menu</button>
+      <strong>Support</strong><button id="closeSupportDialog" class="referral-close-button" aria-label="Close">×</button>
     </div>
     <div class="support-page">
       <div class="support-hero">
@@ -329,13 +358,7 @@ app.innerHTML = `
 
   <dialog id="policyDialog" class="policy-dialog">
     <div class="policy-dialog-header">
-      <div class="subpage-header-main">
-        <button id="backPolicyToMenu" class="subpage-back-button" type="button">← Back to Menu</button>
-        <div>
-          <span class="eyebrow">POLICY LIBRARY</span>
-          <strong>Science By Hugs Policies</strong>
-        </div>
-      </div>
+      <button id="backPolicyToMenu" class="subpage-back-button" type="button">← Menu</button><strong>Policies</strong>
       <button id="closePolicyDialog" class="referral-close-button" aria-label="Close">×</button>
     </div>
 
@@ -359,13 +382,8 @@ app.innerHTML = `
 
   <dialog id="referralDialog" class="referral-dialog">
     <div class="referral-dialog-header">
-      <div class="subpage-header-main">
-        <button id="backReferralToMenu" class="subpage-back-button" type="button">← Back to Menu</button>
-        <div>
-          <span class="eyebrow">REFERRAL LAB</span>
-          <strong>Refer a Friend</strong>
-        </div>
-      </div>
+      <button id="backReferralToMenu" class="subpage-back-button" type="button">← Menu</button>
+      <strong>Referrals</strong>
       <button id="closeReferralDialog" class="referral-close-button" aria-label="Close">×</button>
     </div>
     <div id="referralDialogContent" class="referral-dialog-content"></div>
@@ -382,7 +400,7 @@ app.innerHTML = `
     <div class="cart-heading">
       <span class="eyebrow">NEXUS CHECKOUT</span>
       <h2>Your research cart.</h2>
-      <p>Review your items, acknowledge the policies, then pay now or request an invoice by email.</p>
+      <p>${ENABLE_TEST_PAYMENTS ? 'Review your items and choose how to check out.' : 'Review your items. Checkout and invoice requests are unavailable in this early build.'}</p>
     </div>
 
     <div id="cartEmpty" class="cart-empty">
@@ -400,7 +418,7 @@ app.innerHTML = `
         <div class="summary-row"><span id="cartDiscountLabel">Discounts</span><strong id="cartDiscount">-$0.00</strong></div>
         <div class="summary-row"><span>Shipping</span><strong id="cartShipping">$0.00</strong></div>
         <div class="summary-row"><span>Sales Tax (8%)</span><strong id="cartTax">$0.00</strong></div>
-        <div class="summary-row"><span>PayPal/Venmo/Apple Pay Processing Fee (5%)</span><strong id="cartProcessingFee">$0.00</strong></div>
+        <div class="summary-row"><span>Processing fee (5%)</span><strong id="cartProcessingFee">$0.00</strong></div>
         <div class="summary-row total-row"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
         <div class="server-note">Final pricing is revalidated securely when the request is submitted.</div>
       </section>
@@ -541,10 +559,8 @@ app.innerHTML = `
 
     <div id="signedOutView" class="auth-shell">
       <div class="auth-brand-panel">
-        <img class="auth-brand-logo" src="${nexusLogoUrl}" alt="Nexus — Science By Hugs" />
-        <span class="auth-status-pill"><i></i> SECURE CUSTOMER ACCESS</span>
-        <h2>Welcome to <em>Nexus.</em></h2>
-        <p class="account-copy">Your Science By Hugs account connects orders, invoices, rewards, and research access in one place.</p>
+        <h2>Welcome back.</h2>
+        <p class="account-copy">Your research, all in one place.</p>
       </div>
 
       <form id="loginForm" class="auth-form auth-card">
@@ -556,21 +572,16 @@ app.innerHTML = `
           Password
           <input id="loginPassword" type="password" autocomplete="current-password" required />
         </label>
-        <button id="loginSubmit" class="auth-primary auth-primary-glow" type="submit">Sign In to Nexus <span aria-hidden="true">→</span></button>
-        <button id="forgotPasswordButton" class="auth-link auth-forgot-link" type="button">Forgot your password?</button>
-        <div class="auth-divider"><span>First time here?</span></div>
-        <button id="createAccountButton" class="auth-secondary create-account-button" type="button">
-          <span class="create-account-icon" aria-hidden="true">＋</span>
-          <span><strong>Create Account</strong><small>Join as a New Researcher</small></span>
-          <b aria-hidden="true">→</b>
-        </button>
+        <button id="forgotPasswordButton" class="auth-link auth-forgot-link" type="button">Forgot password?</button>
+        <button id="loginSubmit" class="auth-primary" type="submit">Sign in</button>
+        <div class="auth-switch"><span>New to Nexus?</span><button id="createAccountButton" class="auth-link" type="button">Create account</button></div>
+        <div class="auth-divider auth-divider-apple"><span>or continue with</span></div>
+        ${appleButton()}
         <div id="loginMessage" class="auth-message" aria-live="polite"></div>
       </form>
 
       <form id="signupForm" class="auth-form recovery-form auth-card" hidden>
-        <span class="eyebrow">CREATE NEXUS IDENTITY</span>
-        <h3>Join the Nexus.</h3>
-        <p class="account-copy">Create your account and begin as a New Researcher.</p>
+        <div class="auth-form-heading"><h2>Create account.</h2><p class="account-copy">A home for your research.</p></div>
         <div class="account-name-grid">
           <label>
             First name
@@ -594,7 +605,9 @@ app.innerHTML = `
           <input id="signupPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required />
         </label>
         <button id="signupSubmit" class="auth-primary" type="submit">Create Account</button>
-        <button id="signupBack" class="auth-link" type="button">Back to sign in</button>
+        <div class="auth-switch"><span>Already a member?</span><button id="signupBack" class="auth-link" type="button">Sign in</button></div>
+        <div class="auth-divider auth-divider-apple"><span>or continue with</span></div>
+        ${appleButton()}
         <div id="signupMessage" class="auth-message" aria-live="polite"></div>
       </form>
 
@@ -623,18 +636,22 @@ app.innerHTML = `
           Confirm new password
           <input id="recoveryPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required />
         </label>
-        ${marketingFields('activation')}
         <button id="recoveryPasswordSubmit" class="auth-primary" type="submit">Set New Password</button>
         <div id="recoveryPasswordMessage" class="auth-message" aria-live="polite"></div>
       </form>
     </div>
 
+    <section id="appleProfileSetup" hidden>
+      <h2>Finish your NEXUS profile</h2><p>Already a customer? Use your existing sign-in, then connect Apple in Account settings to keep your customer number and orders.</p>
+      <button id="appleUseExisting" type="button" class="auth-secondary">Use my existing account</button>
+      <form id="appleProfileForm" class="auth-form"><label>First name<input id="appleFirstName" autocomplete="given-name" maxlength="80" required></label><label>Last name<input id="appleLastName" autocomplete="family-name" maxlength="80" required></label><button type="submit" class="auth-primary">Create my NEXUS profile</button><p role="status" id="appleProfileMessage" aria-live="polite"></p></form>
+    </section>
     <div id="signedInView" hidden>
       <div id="accountHubView" class="account-hub-view">
         <div class="account-welcome">
-          <span class="eyebrow">NEXUS IDENTITY</span>
+          <div class="account-profile-heading">${avatarMarkup()}<span class="eyebrow">YOUR ACCOUNT</span></div>
           <h2 id="accountWelcome">Welcome to the Nexus.</h2>
-          <p class="account-copy">Your research account, orders, and connections — all in one place.</p>
+
           <div class="account-identity-strip">
             <span id="accountCustomerId">—</span>
             <i></i>
@@ -649,22 +666,23 @@ app.innerHTML = `
 
         <div class="account-hub-actions">
           <button id="manageAccountButton" class="account-hub-card" type="button">
-            <span class="account-hub-icon">◎</span>
+            <span class="account-hub-icon">${icon("settings")}</span>
             <span><strong>Manage Account</strong><small>Photo, profile, notifications & security</small></span>
             <b>→</b>
           </button>
+          <button id="membershipButton" class="account-hub-card" type="button"><span class="account-hub-icon">${icon('account')}</span><span><strong>My Membership</strong><small>Your plan and member benefits</small></span><b>→</b></button>
           <button id="orderActivityButton" class="account-hub-card" type="button">
-            <span class="account-hub-icon">◇</span>
+            <span class="account-hub-icon">${icon("orders")}</span>
             <span><strong>Order Activity</strong><small>Orders, payments & invoices</small></span>
             <b>→</b>
           </button>
           <button id="accountReferralButton" class="account-hub-card" type="button">
-            <span class="account-hub-icon">↗</span>
+            <span class="account-hub-icon">${icon("referral")}</span>
             <span><strong>Refer a Friend</strong><small>Share Nexus & view referral progress</small></span>
             <b>→</b>
           </button>
           <button id="logoutButton" class="account-hub-card account-hub-signout" type="button">
-            <span class="account-hub-icon">↪</span>
+            <span class="account-hub-icon">${icon("logout")}</span>
             <span><strong>Sign Out</strong><small>Securely end this Nexus session</small></span>
             <b>→</b>
           </button>
@@ -676,7 +694,7 @@ app.innerHTML = `
         <div class="account-subview-heading">
           <span class="eyebrow">ACCOUNT CONTROL</span>
           <h2>Manage Account</h2>
-          <p>Keep your Nexus identity and sign-in information current.</p>
+          <p>Your profile, preferences, and security.</p>
         </div>
 
         ${avatarPanel()}
@@ -703,9 +721,10 @@ app.innerHTML = `
           <div id="accountManageMessage" class="auth-message" aria-live="polite"></div>
         </form>
 
-        ${pushPanel()}
-        ${marketingPanel()}
+        <section class="account-notifications"><div class="account-section-heading"><h3>Notifications & updates</h3><p>Choose how you hear from Science By Hugs.</p></div>${pushPanel()}${marketingPanel()}</section>
         <section class="account-security-shell account-manage-security">
+          ${biometricPanel()}
+          <section class="apple-account-panel"><h3>Sign in with Apple</h3><p>Connect Apple while signed in to keep this account, membership and order history.</p>${appleButton('link')}<p id="appleLinkMessage" role="status" aria-live="polite"></p></section>
           <div class="account-history-heading">
             <div>
               <span class="eyebrow">SECURITY</span>
@@ -731,6 +750,7 @@ app.innerHTML = `
         </section>
       </div>
 
+      <div id="accountMembershipView" class="account-subview" hidden><button id="backFromMembership" class="subpage-back-button" type="button">← Back to Account</button><div id="membershipContent"></div></div>
       <div id="accountOrdersView" class="account-subview" hidden>
         <button id="backFromOrderActivity" class="subpage-back-button account-subview-back" type="button">← Back to Account</button>
         <section class="account-history-shell account-orders-shell">
@@ -753,6 +773,16 @@ app.innerHTML = `
 const discountCodeInput = document.querySelector<HTMLInputElement>('#discountCode')!
 const applyDiscountCodeButton = document.querySelector<HTMLButtonElement>('#applyDiscountCodeButton')!
 const discountCodeMessage = document.querySelector<HTMLDivElement>('#discountCodeMessage')!
+bindSheetHeaders()
+bindAppleButtons()
+void initBiometricUnlock(async () => {
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
+  if (error) throw error
+  await refreshAccount()
+  document.querySelectorAll<HTMLDialogElement>('#app dialog[open]').forEach(dialog => dialog.close())
+  showMainScreen('home')
+})
+
 const grid = document.querySelector<HTMLDivElement>('#catalogGrid')!
 const chips = document.querySelector<HTMLDivElement>('#categoryChips')!
 const count = document.querySelector<HTMLSpanElement>('#productCount')!
@@ -813,6 +843,7 @@ const productDialog = document.querySelector<HTMLDialogElement>('#productDialog'
 const dialogContent = document.querySelector<HTMLDivElement>('#dialogContent')!
 const cartDialog = document.querySelector<HTMLDialogElement>('#cartDialog')!
 const accountDialog = document.querySelector<HTMLDialogElement>('#accountDialog')!
+bindPasswordVisibility()
 const menuDialog = document.querySelector<HTMLDialogElement>('#menuDialog')!
 const supportDialog = document.querySelector<HTMLDialogElement>('#supportDialog')!
 const policyDialog = document.querySelector<HTMLDialogElement>('#policyDialog')!
@@ -822,11 +853,10 @@ const menuButton = document.querySelector<HTMLButtonElement>('#menuButton')!
 const accountButton = document.querySelector<HTMLButtonElement>('#accountButton')!
 const cartButton = document.querySelector<HTMLButtonElement>('#cartButton')!
 const cartCount = document.querySelector<HTMLSpanElement>('#cartCount')!
-const mobileCartCount = document.querySelector<HTMLElement>('#mobileCartCount')!
 const mobileHomeButton = document.querySelector<HTMLButtonElement>('#mobileHomeButton')!
 const mobileAccountButton = document.querySelector<HTMLButtonElement>('#mobileAccountButton')!
-const mobileSupportButton = document.querySelector<HTMLButtonElement>('#mobileSupportButton')!
-const mobileCartButton = document.querySelector<HTMLButtonElement>('#mobileCartButton')!
+const mobileCatalogButton = document.querySelector<HTMLButtonElement>('#mobileCatalogButton')!
+const mobileOrdersButton = document.querySelector<HTMLButtonElement>('#mobileOrdersButton')!
 const signedOutView = document.querySelector<HTMLDivElement>('#signedOutView')!
 const signedInView = document.querySelector<HTMLDivElement>('#signedInView')!
 const accountHubView = document.querySelector<HTMLDivElement>('#accountHubView')!
@@ -915,7 +945,7 @@ function showToast(message: string) {
 
 
 function renderAccountBenefits() {
-  const benefits = getMembershipBenefits(currentProfile)
+  const benefits = membershipBenefits(getMembershipBenefits(currentProfile))
   const container = document.querySelector<HTMLElement>('#accountBenefits')
   if (!container) return
 
@@ -927,12 +957,29 @@ function renderAccountBenefits() {
 
   container.hidden = false
   container.innerHTML = benefits.map(benefit => {
-    const active = hasMembershipBenefit(currentProfile, benefit)
+    const active = true
     return `<span class="account-benefit-chip" data-active="${active ? 'true' : 'false'}">✓ ${escapeHtml(benefit)}</span>`
   }).join('')
 }
 
+function renderMembership() {
+  const container = document.querySelector<HTMLElement>('#membershipContent')!
+  const benefits = membershipBenefits(getMembershipBenefits(currentProfile))
+  container.innerHTML = `<div class="membership-heading"><span class="eyebrow">YOUR MEMBERSHIP</span><h2>${escapeHtml(currentProfile?.memberships?.name || 'Researcher')}</h2><p>${escapeHtml(currentProfile?.customer_number || 'Your account')} · ${escapeHtml(currentProfile?.account_status || 'Active')}</p></div><section class="membership-card"><h3>Member benefits</h3>${benefits.length ? `<ul>${benefits.map(benefit => `<li><span aria-hidden="true">✓</span><span>${escapeHtml(benefit)}</span></li>`).join('')}</ul>` : '<p>Your current membership has no additional benefits.</p>'}</section>`
+}
+function showMembership() {
+  accountDialog.querySelector('.sheet-topbar > strong')!.textContent = 'Membership'
+  accountHubView.hidden = true
+  accountManageView.hidden = true
+  accountOrdersView.hidden = true
+  document.querySelector<HTMLElement>('#accountMembershipView')!.hidden = false
+  renderMembership()
+  accountDialog.scrollTop = 0
+}
+
 function showAccountHub() {
+  accountDialog.querySelector('.sheet-topbar > strong')!.textContent = 'Account'
+  document.querySelector<HTMLElement>('#accountMembershipView')!.hidden = true
   void bindAvatars([currentProfile?.first_name, currentProfile?.last_name].filter(Boolean).join(' '), true)
   accountHubView.hidden = false
   accountManageView.hidden = true
@@ -941,6 +988,8 @@ function showAccountHub() {
 }
 
 function showAccountManage() {
+  accountDialog.querySelector('.sheet-topbar > strong')!.textContent = 'Manage Account'
+  document.querySelector<HTMLElement>('#accountMembershipView')!.hidden = true
   accountHubView.hidden = true
   accountManageView.hidden = false
   accountOrdersView.hidden = true
@@ -949,6 +998,8 @@ function showAccountManage() {
 }
 
 function showOrderActivity() {
+  accountDialog.querySelector('.sheet-topbar > strong')!.textContent = 'Orders'
+  document.querySelector<HTMLElement>('#accountMembershipView')!.hidden = true
   accountHubView.hidden = true
   accountManageView.hidden = true
   accountOrdersView.hidden = false
@@ -957,6 +1008,8 @@ function showOrderActivity() {
 }
 
 function showLoginView() {
+  document.querySelector<HTMLElement>('.auth-brand-panel')!.hidden = false
+  accountDialog.scrollTop = 0
   loginForm.hidden = false
   signupForm.hidden = true
   forgotPasswordForm.hidden = true
@@ -964,6 +1017,8 @@ function showLoginView() {
 }
 
 function showSignupView() {
+  document.querySelector<HTMLElement>('.auth-brand-panel')!.hidden = true
+  accountDialog.scrollTop = 0
   loginForm.hidden = true
   signupForm.hidden = false
   forgotPasswordForm.hidden = true
@@ -973,6 +1028,8 @@ function showSignupView() {
 }
 
 function showForgotPasswordView() {
+  document.querySelector<HTMLElement>('.auth-brand-panel')!.hidden = true
+  accountDialog.scrollTop = 0
   loginForm.hidden = true
   signupForm.hidden = true
   forgotPasswordForm.hidden = false
@@ -982,6 +1039,8 @@ function showForgotPasswordView() {
 }
 
 function showRecoveryPasswordView() {
+  document.querySelector<HTMLElement>('.auth-brand-panel')!.hidden = true
+  accountDialog.scrollTop = 0
   loginForm.hidden = true
   signupForm.hidden = true
   forgotPasswordForm.hidden = true
@@ -1007,12 +1066,14 @@ function showRecoveryPasswordView() {
     if (submit) submit.textContent = 'Set New Password'
   }
 
-  if (!accountDialog.open) accountDialog.showModal()
+  if (!accountDialog.open) openDialog(accountDialog)
 }
 
+let referralClaimPending = false
 async function maybeClaimStoredReferral() {
   const referralCode = window.localStorage.getItem('sbh_referral_code')?.trim()
-  if (!referralCode) return
+  if (!referralCode || referralClaimPending) return
+  referralClaimPending = true
 
   try {
     await claimReferral(referralCode)
@@ -1024,6 +1085,8 @@ async function maybeClaimStoredReferral() {
     showToast('Referral connected')
   } catch (error) {
     console.info('Referral attribution unavailable', error)
+  } finally {
+    referralClaimPending = false
   }
 }
 
@@ -1036,7 +1099,7 @@ function referralStatusLabel(status: string) {
 
 async function openReferralDashboard() {
   if (menuDialog.open) menuDialog.close()
-  if (!referralDialog.open) referralDialog.showModal()
+  if (!referralDialog.open) openDialog(referralDialog)
 
   if (!currentProfile) {
     referralDialogContent.innerHTML = `
@@ -1047,7 +1110,7 @@ async function openReferralDashboard() {
     `
     document.querySelector<HTMLButtonElement>('#referralSignInButton')?.addEventListener('click', () => {
       referralDialog.close()
-      accountDialog.showModal()
+      openDialog(accountDialog)
     })
     return
   }
@@ -1111,18 +1174,17 @@ async function openReferralDashboard() {
           <b>${reward.value}%</b>
         </div>
       `).join('')
-    : '<div class="referral-empty">No percentage rewards available right now.</div>'
+    : '<div class="referral-empty">Rewards will appear here after a qualifying referral.</div>'
 
   referralDialogContent.innerHTML = `
     <div class="referral-dashboard">
       <div class="referral-hero">
-        <span class="eyebrow">REFERRAL LAB</span>
-        <h3>Refer a Friend</h3>
-        <p>Share your Nexus referral link. Qualified referrals count toward your Science By Hugs rewards.</p>
+        <h3>Share Nexus</h3>
+        <p>Your account number is your referral code. Share your link to connect a friend with Nexus.</p>
       </div>
 
       <div class="referral-code-card">
-        <span>Your Referral Code</span>
+        <span>Your account & referral code</span>
         <strong>${escapeHtml(data.referralCode)}</strong>
         <div class="referral-link">${escapeHtml(referralLink)}</div>
         <div class="referral-actions">
@@ -1131,9 +1193,10 @@ async function openReferralDashboard() {
         </div>
       </div>
 
+      <details class="referral-explainer"><summary>How referrals work</summary><ol><li>Share your personal link.</li><li>Pending means your friend has not yet met the qualification rules.</li><li>Qualified means a paid order has been verified for their account. Only qualified referrals count toward the milestones below.</li></ol><p>Rewards appear after verification. Tracking a friend alone does not earn a reward.</p></details>
       <div class="referral-stats">
-        <div><span>Qualified</span><strong>${data.qualifiedCount}</strong></div>
-        <div><span>Pending</span><strong>${data.pendingCount}</strong></div>
+        <div><span>Qualified</span><strong>${data.qualifiedCount}</strong><small>Verified paid order</small></div>
+        <div><span>Pending</span><strong>${data.pendingCount}</strong><small>Awaiting qualification</small></div>
         <div><span>Total</span><strong>${data.totalCount}</strong></div>
       </div>
 
@@ -1161,7 +1224,7 @@ async function openReferralDashboard() {
         ${milestones}
       </div>
 
-      <form id="trackReferralForm" class="referral-track-form">
+      <details class="referral-track-details"><summary>Track a friend manually</summary><form id="trackReferralForm" class="referral-track-form">
         <div class="referral-section-title">Track a Friend</div>
         <p>Add someone you referred. This does not send them an email; it simply lets Nexus track their progress.</p>
         <label>
@@ -1180,7 +1243,7 @@ async function openReferralDashboard() {
         <div id="trackReferralMessage" class="auth-message"></div>
       </form>
 
-      <div class="referral-history">
+      </details><div class="referral-history">
         <div class="referral-section-title">Your Referrals</div>
         ${referralRows}
       </div>
@@ -1262,13 +1325,13 @@ async function openReferralDashboard() {
 
 function openSupportDialog() {
   if (menuDialog.open) menuDialog.close()
-  supportDialog.showModal()
+  openDialog(supportDialog)
 }
 
 
 function openPolicyDialog() {
   if (menuDialog.open) menuDialog.close()
-  policyDialog.showModal()
+  openDialog(policyDialog)
 }
 
 function categories() {
@@ -1277,7 +1340,7 @@ function categories() {
 
 function renderChips() {
   chips.innerHTML = categories().map(category => `
-    <button class="chip ${category === selectedCategory ? 'active' : ''}" data-category="${escapeHtml(category)}">
+    <button aria-pressed="${category === selectedCategory}" class="chip ${category === selectedCategory ? 'active' : ''}" data-category="${escapeHtml(category)}">
       ${escapeHtml(category)}
     </button>
   `).join('')
@@ -1291,7 +1354,7 @@ function renderChips() {
   })
 }
 
-function visibleProducts() {
+function visibleProducts(applyFilters = true) {
   const normalized = query.trim().toLowerCase()
 
   return products.filter(product => {
@@ -1324,13 +1387,28 @@ function visibleProducts() {
 
     return (
       accessMatch &&
-      categoryMatch &&
-      searchMatch
+      (!applyFilters || categoryMatch) &&
+      (!applyFilters || searchMatch)
     )
   })
 }
 
+function renderHome() {
+  const greeting = document.querySelector<HTMLElement>('#homeGreeting')!
+  greeting.textContent = currentProfile ? `Hello, ${currentProfile.first_name?.trim() || 'Researcher'}.` : 'Welcome to Nexus.'
+  document.querySelector<HTMLElement>('#homeSignInButton')!.hidden = Boolean(currentProfile)
+  document.querySelector<HTMLElement>('#latestOrderButton')!.hidden = !currentProfile
+  const latest = currentProfile ? accountHistory[0] : undefined
+  document.querySelector<HTMLElement>('#latestOrderStatus')!.textContent = !currentProfile ? 'Sign in to see your orders' : homeHistoryState === 'loading' ? 'Loading your latest order…' : homeHistoryState === 'error' ? 'Order history unavailable' : latest ? friendlyOrderStatus(latest.status) : 'No orders yet'
+  document.querySelector<HTMLElement>('#latestOrderNumber')!.textContent = latest?.order_number || (currentProfile ? 'Explore the research catalog.' : 'Keep your research in one place.')
+  const preview = document.querySelector<HTMLElement>('#homeProductPreview')!
+  const product = visibleProducts(false)[0]
+  preview.innerHTML = product ? `<button class="home-product-card" type="button" data-preview-product="${escapeHtml(product.id)}"><img src="${escapeHtml(product.image_url || defaultProductImageUrl)}" alt="Science By Hugs research vial"><span><strong>${escapeHtml(product.name)}</strong><span class="home-product-price">${money(Number(product.price))}</span><span class="availability ${(product.storefront_status || '').toLowerCase() === 'available' ? '' : 'unavailable'}">${escapeHtml(product.storefront_status || 'Unavailable')}</span></span></button>` : '<p class="state">No catalog items available.</p>'
+  preview.querySelector('button')?.addEventListener('click', () => openProduct(product!.id))
+}
+
 function renderProducts() {
+  renderHome()
   const list = visibleProducts()
   count.textContent = `${list.length} item${list.length === 1 ? '' : 's'}`
 
@@ -1407,7 +1485,7 @@ function openProduct(id: string) {
     <h2>${escapeHtml(product.name)}</h2>
     <div class="dialog-price">${money(Number(product.price))}</div>
     <p class="dialog-description">${escapeHtml(product.description || 'Product information is being prepared.')}</p>
-    <div class="research-notice">For research use only. Catalog availability is synchronized with the Science By Hugs research database.</div>
+    <div class="research-notice">For research use only. Not for human or veterinary use. Educational information is not medical advice.</div>
     <button id="dialogAddToCart" class="request-invoice-button" type="button" ${available ? '' : 'disabled'}>
       ${available ? 'Add to Cart' : 'Unavailable'}
     </button>
@@ -1420,7 +1498,7 @@ function openProduct(id: string) {
     showToast('Added to cart')
   })
 
-  productDialog.showModal()
+  openDialog(productDialog)
 }
 
 function canViewRestrictedCatalog() {
@@ -1486,8 +1564,6 @@ function updateCartUI() {
 
   const quantity = cartQuantity(cart)
   cartCount.textContent = String(quantity)
-  mobileCartCount.textContent = String(quantity)
-  mobileCartCount.hidden = quantity === 0
 
   if (!cart.length) {
     cartEmpty.hidden = false
@@ -1502,12 +1578,12 @@ function updateCartUI() {
     <div class="cart-row">
       <div class="cart-copy">
         <strong>${escapeHtml(item.product)}</strong>
-        <span>${money(item.price)} each</span>
+        <span>${money(item.price)} each</span><button class="cart-remove text-action" type="button" data-remove-id="${item.id}" aria-label="Remove ${escapeHtml(item.product)} from cart">Remove</button>
       </div>
       <div class="quantity-control">
-        <button type="button" data-qty-id="${item.id}" data-delta="-1">−</button>
-        <b>${item.quantity}</b>
-        <button type="button" data-qty-id="${item.id}" data-delta="1">+</button>
+        <button type="button" aria-label="Decrease quantity of ${escapeHtml(item.product)}" data-qty-id="${item.id}" data-delta="-1">−</button>
+        <b aria-label="Quantity" aria-live="polite">${item.quantity}</b>
+        <button type="button" aria-label="Increase quantity of ${escapeHtml(item.product)}" data-qty-id="${item.id}" data-delta="1">+</button>
       </div>
       <strong class="line-total">${money(item.price * item.quantity)}</strong>
     </div>
@@ -1520,6 +1596,15 @@ function updateCartUI() {
         button.dataset.qtyId || '',
         Number(button.dataset.delta || 0),
       )
+      updateCartUI()
+      Array.from(cartItems.querySelectorAll<HTMLButtonElement>('[data-qty-id]')).find(next => next.dataset.qtyId === button.dataset.qtyId && next.dataset.delta === button.dataset.delta)?.focus({ preventScroll: true })
+    })
+  })
+
+  cartItems.querySelectorAll<HTMLButtonElement>('[data-remove-id]').forEach(button => {
+    button.addEventListener('click', () => {
+      cart = cart.filter(item => item.id !== button.dataset.removeId)
+      saveCart(cart)
       updateCartUI()
     })
   })
@@ -1572,6 +1657,13 @@ function currentAccountIsActive() {
 }
 
 function updateRequestButton() {
+  if (!ENABLE_TEST_PAYMENTS) {
+    payNowButton.disabled = true
+    requestInvoiceButton.disabled = true
+    payNowButton.textContent = 'Checkout unavailable'
+    requestInvoiceButton.textContent = 'Invoice requests unavailable'
+    return
+  }
   if (!cart.length) {
     payNowButton.disabled = true
     requestInvoiceButton.disabled = true
@@ -2021,6 +2113,7 @@ const deliveryDate = (value: string) => new Intl.DateTimeFormat('en-US', {
 }).format(new Date(value + 'T00:00:00Z'))
 
 function renderAccountHistory() {
+  renderHome()
   if (!currentProfile) {
     accountHistoryList.innerHTML = '<div class="history-state">Sign in to view your order history.</div>'
     return
@@ -2457,14 +2550,24 @@ async function refreshOrderHistory() {
     return
   }
 
+  const requestedProfileId = currentProfile.id
+  homeHistoryState = 'loading'
+  renderHome()
   accountHistoryList.innerHTML = '<div class="history-state">Loading history…</div>'
   refreshHistoryButton.disabled = true
 
   try {
-    accountHistory = await getMyOrderHistory(currentProfile.id)
+    const history = await getMyOrderHistory(requestedProfileId)
+    if (currentProfile?.id !== requestedProfileId) return
+    accountHistory = history
+    homeHistoryState = 'ready'
     renderAccountHistory()
   } catch (error) {
     console.error('Order history load failed', error)
+    if (currentProfile?.id !== requestedProfileId) return
+    accountHistory = []
+    homeHistoryState = 'error'
+    renderHome()
     accountHistoryList.innerHTML =
       '<div class="history-state history-error">Order history could not be loaded.</div>'
   } finally {
@@ -2474,11 +2577,20 @@ async function refreshOrderHistory() {
 
 async function refreshAccount() {
   const user = await getCurrentUser()
+  bindAppleButtons()
+  const appleLinked = Boolean(user?.identities?.some(identity => identity.provider === 'apple'))
+  const linkButton = document.querySelector<HTMLButtonElement>('[data-apple-intent="link"]')!
+  linkButton.dataset.appleConnected = String(appleLinked)
+  linkButton.querySelector('span')!.textContent = appleLinked ? 'Apple connected' : 'Connect Apple'
+  if (appleLinked) linkButton.disabled = true
+  await setBiometricAccount(user?.id || '')
   void bindPushPanel(!recoveryMode && !inviteMode ? user?.id || '' : '')
   void bindAvatars()
 
   if (recoveryMode || inviteMode) {
     currentProfile = null
+    accountHistory = []
+    renderHome()
     showRecoveryPasswordView()
     updateCheckoutCustomer()
     updateCartUI()
@@ -2486,7 +2598,11 @@ async function refreshAccount() {
   }
 
   if (!user) {
+    appleProfileSetup = false
+    document.querySelector<HTMLElement>('#appleProfileSetup')!.hidden = true
+    resetMarketingPreferences()
     currentProfile = null
+    renderHome()
     accountButton.textContent = 'Account'
     signedOutView.hidden = false
     signedInView.hidden = true
@@ -2498,12 +2614,23 @@ async function refreshAccount() {
   }
 
   try {
+    const previousProfileId = currentProfile?.id
     currentProfile = await getMyProfile()
+    if (previousProfileId !== currentProfile?.id) accountHistory = []
   } catch (error) {
     console.error('Profile load failed', error)
     currentProfile = null
   }
 
+  appleProfileSetup = appleProfileSetup || (!currentProfile && appleLinked)
+  if (appleProfileSetup && !currentProfile) {
+    signedOutView.hidden = true; signedInView.hidden = true
+    document.querySelector<HTMLElement>('#appleProfileSetup')!.hidden = false
+    openDialog(accountDialog)
+    return
+  }
+  appleProfileSetup = false
+  document.querySelector<HTMLElement>('#appleProfileSetup')!.hidden = true
   signedOutView.hidden = true
   signedInView.hidden = false
 
@@ -2515,14 +2642,17 @@ async function refreshAccount() {
   accountButton.innerHTML = avatarMarkup()
   accountButton.setAttribute('aria-label', fullName || 'My Account')
   void bindAvatars(fullName)
-  document.querySelector<HTMLElement>('#accountWelcome')!.textContent = `Welcome, ${firstName}, to the Nexus.`
+  document.querySelector<HTMLElement>('#accountWelcome')!.textContent = `Hello, ${firstName}.`
   document.querySelector<HTMLElement>('#accountName')!.textContent = fullName || 'Your account'
   document.querySelector<HTMLElement>('#accountEmail')!.textContent = currentProfile?.email || user.email || ''
   document.querySelector<HTMLElement>('#accountCustomerId')!.textContent = currentProfile?.customer_number || 'Nexus Member'
   document.querySelector<HTMLElement>('#accountMembership')!.textContent = currentProfile?.memberships?.name || 'Member'
   document.querySelector<HTMLElement>('#accountStatus')!.textContent = currentProfile?.account_status || 'Active'
   renderAccountBenefits()
-  void bindMarketing('nexus')
+  renderHome()
+  if (currentProfile && currentAccountIsActive()) void maybeClaimStoredReferral()
+  void refreshOrderHistory()
+  void bindMarketing('nexus', currentProfile?.phone || '')
   manageFirstName.value = currentProfile?.first_name || ''
   manageLastName.value = currentProfile?.last_name || ''
   managePhone.value = currentProfile?.phone || ''
@@ -2532,7 +2662,7 @@ async function refreshAccount() {
   if (pushUrl.searchParams.get('push') === 'orders') {
     pushUrl.searchParams.delete('push')
     history.replaceState(null, '', pushUrl)
-    if (!accountDialog.open) accountDialog.showModal()
+    if (!accountDialog.open) openDialog(accountDialog)
     showOrderActivity()
   }
   updateCheckoutCustomer()
@@ -2563,7 +2693,7 @@ menuDialog.addEventListener('click', event => {
 })
 function returnToMenu(dialog: HTMLDialogElement) {
   dialog.close()
-  if (!menuDialog.open) menuDialog.showModal()
+  if (!menuDialog.open) openDialog(menuDialog)
 }
 
 supportDialog.addEventListener('click', event => {
@@ -2593,8 +2723,10 @@ document.querySelector<HTMLButtonElement>('#successCloseButton')!.addEventListen
 document.querySelector<HTMLButtonElement>('#payNowSuccessCloseButton')!.addEventListener('click', () => cartDialog.close())
 
 menuButton.addEventListener('click', () => {
-  menuDialog.showModal()
+  if (menuDialog.open) menuDialog.close()
+  else openDialog(menuDialog)
 })
+document.querySelector('#menuDoneButton')!.addEventListener('click', () => { menuDialog.close(); showMainScreen('home') })
 
 menuDialog.querySelectorAll<HTMLButtonElement>('[data-menu-target]').forEach(button => {
   button.addEventListener('click', () => {
@@ -2602,13 +2734,13 @@ menuDialog.querySelectorAll<HTMLButtonElement>('[data-menu-target]').forEach(but
 
     if (target === 'catalog') {
       menuDialog.close()
-      document.querySelector('.catalog-shell')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      showMainScreen('catalog')
       return
     }
 
     if (target === 'account') {
       menuDialog.close()
-      accountDialog.showModal()
+      openAccountDialog()
       return
     }
 
@@ -2638,49 +2770,53 @@ function openCartDialog() {
   payNowSuccess.hidden = true
   cartEmpty.hidden = cart.length > 0
   cartContent.hidden = cart.length === 0
-  cartDialog.showModal()
+  openDialog(cartDialog)
 }
 
 function openAccountDialog() {
+  if (appleProfileSetup && !currentProfile) {
+    signedOutView.hidden = true; signedInView.hidden = true
+    document.querySelector<HTMLElement>('#appleProfileSetup')!.hidden = false
+    openDialog(accountDialog); return
+  }
   if (!recoveryMode) {
     showLoginView()
     if (currentProfile) showAccountHub()
   }
-  accountDialog.showModal()
+  openDialog(accountDialog)
 }
 
-function setMobileNavActive(active: 'home' | 'account' | 'support' | 'cart') {
-  const items = [
-    [mobileHomeButton, 'home'],
-    [mobileAccountButton, 'account'],
-    [mobileSupportButton, 'support'],
-    [mobileCartButton, 'cart'],
-  ] as const
-
-  items.forEach(([button, key]) => {
+let activeScreen: 'home' | 'catalog' = 'home'
+function setMobileNavActive(active: 'home' | 'catalog' | 'orders' | 'account') {
+  for (const [button, key] of [[mobileHomeButton, 'home'], [mobileCatalogButton, 'catalog'], [mobileOrdersButton, 'orders'], [mobileAccountButton, 'account']] as const) {
     button.classList.toggle('active', key === active)
-  })
+    if (key === active) button.setAttribute('aria-current', 'page')
+    else button.removeAttribute('aria-current')
+  }
 }
-
-mobileHomeButton.addEventListener('click', () => {
-  setMobileNavActive('home')
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-})
-
-mobileAccountButton.addEventListener('click', () => {
-  setMobileNavActive('account')
+function showMainScreen(screen: 'home' | 'catalog') {
+  activeScreen = screen
+  document.querySelector<HTMLElement>('#homeScreen')!.hidden = screen !== 'home'
+  document.querySelector<HTMLElement>('#catalogScreen')!.hidden = screen !== 'catalog'
+  document.body.dataset.screen = screen
+  setMobileNavActive(screen)
+  window.scrollTo({ top: 0, behavior: 'instant' })
+}
+function openOrders() {
+  setMobileNavActive('orders')
   openAccountDialog()
-})
-
-mobileSupportButton.addEventListener('click', () => {
-  setMobileNavActive('support')
-  openSupportDialog()
-})
-
-mobileCartButton.addEventListener('click', () => {
-  setMobileNavActive('cart')
-  openCartDialog()
-})
+  if (currentProfile) showOrderActivity()
+}
+mobileHomeButton.addEventListener('click', () => showMainScreen('home'))
+mobileCatalogButton.addEventListener('click', () => showMainScreen('catalog'))
+mobileOrdersButton.addEventListener('click', openOrders)
+mobileAccountButton.addEventListener('click', () => { setMobileNavActive('account'); openAccountDialog() })
+for (const id of ['browseCatalogButton']) document.querySelector('#'+id)!.addEventListener('click', () => showMainScreen('catalog'))
+document.querySelector('#homeSignInButton')!.addEventListener('click', openAccountDialog)
+for (const id of ['latestOrderButton']) document.querySelector('#'+id)!.addEventListener('click', openOrders)
+document.querySelector('.brand')!.addEventListener('click', event => { event.preventDefault(); showMainScreen('home') })
+accountDialog.addEventListener('close', () => setMobileNavActive(activeScreen))
+showMainScreen('home')
 
 cartButton.addEventListener('click', () => {
   invoiceSuccess.hidden = true
@@ -2689,12 +2825,12 @@ cartButton.addEventListener('click', () => {
   cartContent.hidden = cart.length === 0
   invoiceRequestMessage.textContent = ''
   updateCartUI()
-  cartDialog.showModal()
+  openDialog(cartDialog)
 })
 
 document.querySelector<HTMLButtonElement>('#cartSignInButton')!.addEventListener('click', () => {
   cartDialog.close()
-  accountDialog.showModal()
+  openDialog(accountDialog)
 })
 
 policyAcknowledgment.addEventListener('change', updateRequestButton)
@@ -2704,7 +2840,7 @@ payNowButton.addEventListener('click', async () => {
   payNowSuccess.hidden = true
   if (!currentProfile) {
     cartDialog.close()
-    accountDialog.showModal()
+    openDialog(accountDialog)
     return
   }
 
@@ -2723,6 +2859,8 @@ payNowButton.addEventListener('click', async () => {
   await setupCartPayNow()
 })
 
+document.querySelector('#membershipButton')!.addEventListener('click', showMembership)
+document.querySelector('#backFromMembership')!.addEventListener('click', showAccountHub)
 manageAccountButton.addEventListener('click', showAccountManage)
 orderActivityButton.addEventListener('click', showOrderActivity)
 backFromManageAccount.addEventListener('click', showAccountHub)
@@ -2772,7 +2910,7 @@ requestInvoiceButton.addEventListener('click', async () => {
   invoiceSuccess.hidden = true
   if (!currentProfile) {
     cartDialog.close()
-    accountDialog.showModal()
+    openDialog(accountDialog)
     return
   }
 
@@ -2928,7 +3066,6 @@ recoveryPasswordForm.addEventListener('submit', async event => {
 
   try {
     const wasInvite = inviteMode
-    const choices = readMarketing(recoveryPasswordForm)
     await updatePassword(recoveryPassword.value)
 
     if (wasInvite) {
@@ -2939,7 +3076,6 @@ recoveryPasswordForm.addEventListener('submit', async event => {
       }
     }
 
-    if (choices.email_opt_in || choices.sms_opt_in) await saveMarketing(recoveryPasswordForm, 'nexus', 'activation')
     recoveryPassword.value = ''
     recoveryPasswordConfirm.value = ''
     recoveryMode = false
@@ -3015,6 +3151,46 @@ document.querySelector<HTMLButtonElement>('#logoutButton')!.addEventListener('cl
   }
 })
 
+document.querySelectorAll<HTMLButtonElement>('[data-apple-intent]').forEach(button => button.addEventListener('click', async () => {
+  if (appleAuthBusy) return
+  const intent = button.dataset.appleIntent === 'link' ? 'link' : 'signin'
+  const output = intent === 'link' ? document.querySelector<HTMLElement>('#appleLinkMessage')! : (signupForm.hidden ? loginMessage : signupMessage)
+  output.textContent = ''; appleAuthBusy = true
+  document.querySelectorAll<HTMLButtonElement>('[data-apple-intent]').forEach(b => b.disabled = true)
+  try {
+    const result = await authenticateWithApple(intent)
+    if (intent === 'signin') {
+      appleProfileSetup = true
+      document.querySelector<HTMLInputElement>('#appleFirstName')!.value = result.firstName
+      document.querySelector<HTMLInputElement>('#appleLastName')!.value = result.lastName
+    }
+    await refreshAccount()
+    if (intent === 'link') output.textContent = 'Apple connected. Your customer number, membership and orders are unchanged.'
+    else if (currentProfile) { accountDialog.close(); await loadCatalog() }
+  } catch (error) {
+    output.textContent = error instanceof Error ? error.message : 'Apple sign-in could not finish.'
+  } finally { appleAuthBusy = false; bindAppleButtons() }
+}))
+document.querySelector<HTMLFormElement>('#appleProfileForm')!.addEventListener('submit', async event => {
+  event.preventDefault()
+  const form = event.currentTarget as HTMLFormElement
+  const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]')!
+  const message = document.querySelector<HTMLElement>('#appleProfileMessage')!
+  submit.disabled = true; message.textContent = ''
+  try {
+    const {data,error} = await supabase.functions.invoke('complete-apple-profile',{body:{firstName:document.querySelector<HTMLInputElement>('#appleFirstName')!.value.trim(),lastName:document.querySelector<HTMLInputElement>('#appleLastName')!.value.trim()}})
+    if (error || !data?.success) throw new Error('Profile setup is not available yet. Staging access must be approved. Existing customers should use their original account and connect Apple from settings.')
+    appleProfileSetup = false
+    await refreshAccount(); await loadCatalog(); accountDialog.close()
+  } catch(error) {message.textContent = error instanceof Error ? error.message : 'Could not create your profile.'}
+  finally {submit.disabled = false}
+})
+document.querySelector('#appleUseExisting')!.addEventListener('click',async()=>{
+  const {error}=await supabase.auth.signOut({scope:'local'})
+  if(error){showToast('Could not sign out. Please try again.');return}
+  appleProfileSetup=false;await refreshAccount();openAccountDialog()
+})
+
 loginForm.addEventListener('submit', async event => {
   event.preventDefault()
   loginMessage.textContent = ''
@@ -3030,7 +3206,7 @@ loginForm.addEventListener('submit', async event => {
 
     if (cart.length) {
       updateCartUI()
-      cartDialog.showModal()
+      openDialog(cartDialog)
     }
   } catch (error) {
     loginMessage.textContent = error instanceof Error ? error.message : 'Sign in failed.'
@@ -3046,6 +3222,7 @@ searchInput.addEventListener('input', () => {
 })
 
 onAuthChange((event) => {
+  if (appleAuthBusy) return
   if (event === 'PASSWORD_RECOVERY') {
     recoveryMode = !inviteMode
     showRecoveryPasswordView()
@@ -3089,6 +3266,7 @@ async function loadCatalog() {
     updateCartUI()
   } catch (error) {
     console.error(error)
+    document.querySelector<HTMLElement>('#homeProductPreview')!.innerHTML = '<p class="state">Catalog unavailable. Please try again later.</p>'
     grid.innerHTML = `
       <div class="state error">
         <strong>Nexus could not reach the catalog.</strong>

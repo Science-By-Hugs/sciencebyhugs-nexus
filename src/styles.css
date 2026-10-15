@@ -3239,3 +3239,6 @@ radial-gradient(circle at 8% 78%,#2F80ED 0 1px,transparent 1.3px);background-siz
   .discount-code-row{grid-template-columns:minmax(0,1fr) 84px}
   .discount-code-apply{min-width:84px;padding:0 10px}
 }
+
+/* Visible identity for every 2.0 staging screen. */
+#staging-environment-label{position:sticky;top:0;z-index:10000;padding:7px 12px;background:#5b3f00;color:#fff4c2;text-align:center;font:600 11px/1.4 system-ui,sans-serif;letter-spacing:.06em}
