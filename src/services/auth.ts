@@ -1,4 +1,4 @@
-import { buildAuthReturnUrl } from '../appLinks'
+import { APP_ORIGIN } from '../config'
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
@@ -43,7 +43,7 @@ export function hasMembershipBenefit(
   )
 }
 
-const NEXUS_SIGNUP_REDIRECT_URL = buildAuthReturnUrl()
+const NEXUS_SIGNUP_REDIRECT_URL = APP_ORIGIN + '/'
 
 export async function signUp(input: {
   firstName: string
@@ -100,7 +100,7 @@ export async function signOut() {
 }
 
 
-const NEXUS_RECOVERY_URL = buildAuthReturnUrl('recovery')
+const NEXUS_RECOVERY_URL = APP_ORIGIN + '/?mode=recovery'
 
 export async function requestPasswordReset(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {

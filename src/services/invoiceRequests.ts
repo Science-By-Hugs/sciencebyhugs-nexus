@@ -1,5 +1,4 @@
 import { supabase } from './supabase'
-import { assertTestPaymentsEnabled } from '../config'
 import type { CartItem } from './cart'
 
 export type InvoiceRequestResult = {
@@ -28,7 +27,6 @@ export async function requestInvoice(
     discountCode?: string
   },
 ): Promise<InvoiceRequestResult> {
-  assertTestPaymentsEnabled()
   const { data, error } = await supabase.functions.invoke('request-invoice', {
     method: 'POST',
     body: {

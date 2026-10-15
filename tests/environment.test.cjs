@@ -53,13 +53,3 @@ test('runtime refuses an artifact served on a different or production origin', (
   assert.throws(() => assertV2RuntimeOrigin(fixture.appOrigin, 'https://nexus.sciencebyhugs.com'))
   assert.throws(() => assertV2RuntimeOrigin(fixture.appOrigin, 'https://other-preview.example'))
 })
-
-test('native staging allows only the exact bundled Capacitor origin, never as a backend', () => {
-  assert.equal(validate({ ...fixture, appOrigin: 'capacitor://localhost' }).appOrigin, 'capacitor://localhost')
-  for (const appOrigin of ['capacitor://attacker', 'capacitor://localhost/path', 'capacitor://localhost?token=x', 'capacitor://user@localhost', 'capacitor://localhost:1234', 'file:///']) {
-    assert.throws(() => validate({ ...fixture, appOrigin }))
-  }
-  assert.throws(() => validate({ ...fixture, supabaseUrl: 'capacitor://localhost' }))
-  assert.doesNotThrow(() => assertV2RuntimeOrigin('capacitor://localhost', 'capacitor://localhost'))
-  assert.throws(() => assertV2RuntimeOrigin('capacitor://localhost', 'http://localhost:5173'))
-})

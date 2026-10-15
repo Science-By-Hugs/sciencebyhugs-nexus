@@ -1,9 +1,0 @@
-const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript')
-const code=ts.transpileModule(fs.readFileSync('src/dialogNavigation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-function setup(){const dialogs=[];const context={exports:{},document:{querySelectorAll(){return dialogs.filter(d=>d.open)}}};vm.runInNewContext(code,context);return{open:context.exports.openDialog,dialogs}}
-function sheet(open=false){return{open,scrollTop:500,focused:0,shown:0,close(){this.open=false},showModal(){this.open=true;this.shown++},querySelector(){return{focus:()=>this.focused++}}}}
-test('opening Menu closes an existing sheet and makes its close control reachable',()=>{const{open,dialogs}=setup();const account=sheet(true),menu=sheet();dialogs.push(account,menu);open(menu);assert.equal(account.open,false);assert.equal(menu.open,true);assert.equal(menu.scrollTop,0);assert.equal(menu.focused,1)})
-test('reopening a sheet cannot create another top-layer modal or throw',()=>{const{open,dialogs}=setup();const menu=sheet();dialogs.push(menu);open(menu);open(menu);assert.equal(menu.shown,1);assert.equal(dialogs.filter(d=>d.open).length,1)})
-test('Menu → Referrals → Menu → Close leaves no blocking sheet',()=>{const{open,dialogs}=setup();const menu=sheet(),referrals=sheet();dialogs.push(menu,referrals);open(menu);open(referrals);assert.equal(menu.open,false);open(menu);assert.equal(referrals.open,false);menu.close();assert.equal(dialogs.some(d=>d.open),false)})
-
-test('background navigation cannot close or cover the biometric lock',()=>{const{open,dialogs}=setup();const lock=sheet(true),account=sheet();lock.dataset={lockGuard:'true'};dialogs.push(lock,account);open(account);assert.equal(lock.open,true);assert.equal(account.open,false)})

@@ -1,9 +1,5 @@
 # 2.0 internal beta scope — Day 1
 
-## October 14 scope update
-
-Anthony explicitly added a full NEXUS visual redesign before the next internal build. The approved direction is minimal, dark space-themed, with faint stars and planet shading. NEXUS build 2 shipped that redesign plus native notification registration and test delivery, which Anthony confirmed on his iPhone. CORE visual redesign is deferred. Capacitor is the selected native shell; the older Day 1 framework decision below is historical. Automatic order alerts, purchasing/receipts/fulfillment workflows and remaining device checks still need implementation or verification.
-
 Target: October 26, 2026, internal TestFlight for NEXUS and CORE. The production apps remain unchanged. This document records the requested scope and provisional defaults; it does not claim that the 2.0 business features have been implemented.
 
 ## Included
@@ -35,11 +31,3 @@ Production cutover, customer migration, external TestFlight/public App Store rel
 ## Definition of done
 
 Designated internal testers can install both beta apps, authenticate with staging identities, complete the documented test purchase/receipt/fulfillment flows, and report issues. The beta cannot connect to the existing production Supabase projects, initiate a real Zelle transfer or use live PayPal configuration. Publishing or migrating production requires a separate release decision, a tested recoverable backup and a compatible rollback plan.
-
-## Owner decisions — Day 1 closeout
-
-Anthony authorized proceeding with this beta scope in the build chat. The iOS customer catalog will be limited to selected peptides; the full web catalog remains available subject to its own product eligibility requirements. CORE will manage explicit web/iOS availability and restriction reasons. The iOS subset must be consistent for customers and reviewers, disclosed in review notes, and enforced by backend catalog and purchase endpoints. These controls are requirements for implementation, not completed features.
-
-Use the proposed notice: “For laboratory research use only. Not for human or veterinary use. Educational information is not medical advice and does not provide diagnosis, treatment, or dosing recommendations.” Descriptions and features must match actual intended use; omit human-use instructions, dosing protocols and therapeutic claims. Review individual product eligibility before distribution. Disclaimer wording and comparable apps do not guarantee approval or establish lawful sale. Internal TestFlight does not establish public App Store approval.
-
-Backup preference, vendor-price publication preference, markup/rounding and native framework remain open. The provisional reviewed-price and encrypted-manual-backup approach remains documented without treating it as owner approval.

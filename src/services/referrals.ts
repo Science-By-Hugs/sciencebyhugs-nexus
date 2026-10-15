@@ -93,4 +93,10 @@ export async function claimReferral(referralCode: string) {
   return data
 }
 
-export { buildReferralLink } from '../appLinks'
+export function buildReferralLink(referralCode: string) {
+  const url = new URL(window.location.href)
+  url.search = ''
+  url.hash = ''
+  url.searchParams.set('ref', referralCode)
+  return url.toString()
+}

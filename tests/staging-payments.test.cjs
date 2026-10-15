@@ -10,7 +10,6 @@ function harness(file, {enabled = false, environment = 'sandbox'} = {}) {
   return {api:ctx.exports,calls}
 }
 test('disabled test payments cannot create checkout orders or call payment APIs',async()=>{
- const invoice=harness('invoiceRequests.ts');await assert.rejects(invoice.api.requestInvoice([],{}),/disabled/);assert.equal(invoice.calls.length,0)
  const checkout=harness('checkout.ts');await assert.rejects(checkout.api.createCheckoutOrder([],{}),/disabled/);assert.equal(checkout.calls.length,0)
  const paypal=harness('paypal.ts')
  for(const call of [()=>paypal.api.getPayPalConfig(),()=>paypal.api.createPayPalOrder('order'),()=>paypal.api.capturePayPalOrder('order','provider-order')])await assert.rejects(call(),/disabled/)

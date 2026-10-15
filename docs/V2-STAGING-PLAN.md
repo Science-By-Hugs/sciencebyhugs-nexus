@@ -1,6 +1,6 @@
 # Staging environment and Day 2 provisioning contract
 
-Status: Day 1 foundation verified. The separately connected NEXUS 2.0 Supabase project now exists; this closeout did not provision it. Preview hosting, test Drive and Apple app records remain unverified.
+Status: planned; no hosted staging project, DNS record, preview deployment, Drive folder or Apple app record was created on Day 1.
 
 ## Branches and local previews
 
@@ -13,7 +13,7 @@ Status: Day 1 foundation verified. The separately connected NEXUS 2.0 Supabase p
 
 ## Backend boundary
 
-Use the separate NEXUS 2.0 project for both staged apps: `evyssawhlarqqhgyswhz`, region `ca-central-1`, verified ACTIVE_HEALTHY through the Nexus 2.0 connection. It currently has no public tables, recorded migrations or deployed Edge Functions. Auth, Storage, secrets, billing and scheduler configuration have not been verified. Frontend publishable keys and hosting origins are not configured by this closeout. No production fallback is allowed.
+Create one separate staging Supabase project for both apps, preferably us-west-2 to match production. Project name proposal: Science By Hugs — NEXUS/CORE 2.0 Staging. Its actual project reference, publishable key and preview origin become explicit frontend configuration after provisioning. No production fallback is allowed.
 
 Use the full schema baseline to reconstruct staging, not only the small migration subsets in these repositories. Seed synthetic customers with synthetic verification state, memberships, products, orders, invoices and administrator roles. Deny customer access to other customers’ rows and require owner/admin app_metadata for CORE.
 
@@ -38,7 +38,11 @@ Server-side configuration is not created by frontend environment guards. Before 
 
 ## Capacity and billing
 
-The earlier capacity concern predates the separate NEXUS 2.0 project, which is now accessible in a different organization (`ezfzuzvmtoeokrsleiom`). No additional project is needed for the next backend setup step. Its subscription and costs have not been checked; project availability does not establish a billing decision. This closeout made no billing changes.
+The connected Science By Hugs organization currently lists two active healthy projects (shared NEXUS/CORE and PULSE). The baseline dashboard reports Free. Supabase lists a limit of two active free projects, so a third managed staging project needs a capacity/billing decision. Do not pause either live project to make room. No plan change is authorized by this document.
+
+Possible paths: approve a paid organization with a separately priced staging project, or use a local isolated backend initially while resolving remote capacity. Local development is not a substitute for the remotely reachable backend needed for shared TestFlight testing. Get the actual organization quote before provisioning; public pricing starts at $25/month for Pro with additional projects from $10/month and may affect the existing project charges.
+
+Sources: https://supabase.com/pricing and https://vite.dev/guide/env-and-mode.html, checked October 13, 2026.
 
 ## Apple readiness
 
@@ -46,23 +50,11 @@ An individual Apple Developer membership is user-reported. Xcode 27.0 (27A266a) 
 
 ## Day 2 acceptance checklist
 
-- [ ] Verify the existing staging project configuration/billing and choose private preview hosting.
-- [x] Record and validate the existing separate project identity/health.
+- [ ] Resolve hosted staging capacity/cost and choose private preview hosting.
+- [ ] Create the separate project; record and validate its reference.
 - [ ] Reconstruct full schema and audit the staged policies.
 - [ ] Seed synthetic records; confirm customer isolation and CORE roles.
 - [ ] Configure auth email/redirects for staging only.
 - [ ] Verify all server-side outbound targets before enabling any writes/jobs.
 - [ ] Confirm Apple team/signing and upload a minimal device build.
 - [ ] Test native login return, wallet feasibility, push registration and PDF sharing.
-
-## Day 2 engineering update
-
-The shared staging schema is now installed: 19 application tables, relationships, 12 routines, baseline triggers and row policies, private avatar/invoice buckets and a follow-up hardening migration. Three synthetic Auth identities, three test products and two synthetic order/payment/invoice examples are present. Fourteen guarded read functions restore NEXUS and CORE read paths; the one-time identity bootstrap is closed. This is not a production-data copy.
-
-Hosted previews use separate Cloudflare Pages projects: `https://sbh-nexus-v2-staging.pages.dev` and `https://sbh-core-v2-staging.pages.dev`. Static shells are public, marked noindex, and contain synthetic catalog fixtures. Customer data remains protected by authenticated ownership policies and CORE roles; no customer data is imported. No production DNS/custom domains changed.
-
-Both local `.env.staging.local` files point to the staging project with publishable keys only. Hosted build commands must override the exact app origin; native `npm run ios:sync` rebuilds for `capacitor://localhost`. Pinned Capacitor shells exist under `ios/`, using separate staging bundle identifiers. The templates include UIKit scene lifecycle adoption required by iOS 27. These shells are not yet signed for a physical device or uploaded to TestFlight.
-
-No staged outbound integrations or scheduler are deployed; payments remain disabled. Supabase Auth site URL, redirect allowlist, email settings, leaked-password protection and billing have not been verified because the available browser account cannot access the new organization. Signup, recovery and email-change flows must wait for that configuration. Apple team/signing, native returns, wallet eligibility, APNs and native PDF sharing remain acceptance work.
-
-Authoritative backend source and verification: `../backend/` from this checkout's root, or `v2/backend/` from the parent workspace. See `v2/DAY-2-DEBRIEF.md` for the final validation status.
