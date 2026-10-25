@@ -57,12 +57,6 @@ registerSW({
   },
 })
 
-const stagingLabel = document.createElement('div')
-stagingLabel.id = 'staging-environment-label'
-stagingLabel.textContent = 'NEXUS 2.0 · INTERNAL STAGING · TEST ACCOUNTS ONLY'
-stagingLabel.setAttribute('role', 'status')
-document.body.prepend(stagingLabel)
-
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('App root not found')
 

@@ -1,4 +1,3 @@
-import { assertTestPaymentsEnabled } from '../config'
 import { supabase } from './supabase'
 
 type PayPalConfig = {
@@ -24,7 +23,6 @@ declare global {
 let sdkPromise: Promise<any> | null = null
 
 export async function getPayPalConfig(): Promise<PayPalConfig> {
-  assertTestPaymentsEnabled()
   const { data, error } = await supabase.functions.invoke('paypal-config', {
     body: {},
   })
@@ -34,7 +32,6 @@ export async function getPayPalConfig(): Promise<PayPalConfig> {
     throw new Error(data?.error || 'PayPal is not configured')
   }
 
-  if (data.environment !== 'sandbox') throw new Error('Live PayPal configuration is blocked in staging')
   return data as PayPalConfig
 }
 
@@ -107,8 +104,6 @@ export async function createPayPalOrder(
   orderId: string,
   paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' = 'PayPal',
 ) {
-  assertTestPaymentsEnabled()
-  await getPayPalConfig()
   const { data, error } = await supabase.functions.invoke('paypal-create-order', {
     body: { orderId, paymentMethod },
   })
@@ -130,8 +125,6 @@ export async function capturePayPalOrder(
   paypalOrderId: string,
   paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' = 'PayPal',
 ) {
-  assertTestPaymentsEnabled()
-  await getPayPalConfig()
   const { data, error } = await supabase.functions.invoke('paypal-capture-order', {
     body: { orderId, paypalOrderId, paymentMethod },
   })

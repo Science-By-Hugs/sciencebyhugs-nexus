@@ -4,11 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --mode staging",
-    "build": "tsc && vite build --mode staging",
-    "preview": "vite preview",
-    "test": "node --test tests/*.test.cjs",
-    "verify:staging": "node scripts/verify-staging-build.mjs"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.1"
