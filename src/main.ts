@@ -32,7 +32,6 @@ import {
   type CartItem,
 } from './services/cart'
 import { validateDiscountCode, type DiscountValidation } from './services/discountCodes'
-import { requestInvoice } from './services/invoiceRequests'
 import { createCheckoutOrder, type CheckoutOrderResult } from './services/checkout'
 import { getMyOrderHistory, type NexusOrderHistory } from './services/accountHistory'
 import { capturePayPalOrder, createPayPalOrder, getPayPalSdk } from './services/paypal'
@@ -473,9 +472,6 @@ app.innerHTML = `
         <button id="payNowButton" class="request-invoice-button" type="button">
           Pay Now
         </button>
-        <button id="requestInvoiceButton" class="auth-secondary checkout-invoice-button" type="button" hidden>
-          Request Invoice by Email
-        </button>
         <p>Pay securely with PayPal, Venmo, Apple Pay, or Zelle. A receipt is saved to your account once payment is confirmed.</p>
       </section>
 
@@ -507,19 +503,6 @@ app.innerHTML = `
         </div>
       </section>
 
-      <div id="invoiceRequestMessage" class="invoice-request-message" aria-live="polite"></div>
-    </div>
-
-    <div id="invoiceSuccess" class="invoice-success" hidden>
-      <div class="success-orbit">✓</div>
-      <span class="eyebrow">REQUEST RECEIVED</span>
-      <h2>Invoice queued.</h2>
-      <p>Your invoice request is waiting for Science By Hugs approval.</p>
-      <div class="success-number">
-        <span>Invoice</span>
-        <strong id="successInvoiceNumber">—</strong>
-      </div>
-      <button id="successCloseButton" class="auth-primary" type="button">Return to Nexus</button>
     </div>
 
     <div id="payNowSuccess" class="invoice-success" hidden>
@@ -884,7 +867,6 @@ const policyAcknowledgment = document.querySelector<HTMLInputElement>('#policyAc
 const contactMethod = document.querySelector<HTMLSelectElement>('#contactMethod')!
 const customerNotes = document.querySelector<HTMLTextAreaElement>('#customerNotes')!
 const payNowButton = document.querySelector<HTMLButtonElement>('#payNowButton')!
-const requestInvoiceButton = document.querySelector<HTMLButtonElement>('#requestInvoiceButton')!
 const cartPayPanel = document.querySelector<HTMLElement>('#cartPayPanel')!
 const cartPayPalButton = document.querySelector<HTMLElement>('#cartPayPalButton')!
 const cartVenmoButton = document.querySelector<HTMLElement>('#cartVenmoButton')!
@@ -896,8 +878,6 @@ const cartZelleConfirmation = document.querySelector<HTMLInputElement>('#cartZel
 const cartZelleSubmitButton = document.querySelector<HTMLButtonElement>('#cartZelleSubmitButton')!
 const cartZelleMessage = document.querySelector<HTMLElement>('#cartZelleMessage')!
 const cartPayMessage = document.querySelector<HTMLElement>('#cartPayMessage')!
-const invoiceRequestMessage = document.querySelector<HTMLDivElement>('#invoiceRequestMessage')!
-const invoiceSuccess = document.querySelector<HTMLDivElement>('#invoiceSuccess')!
 const payNowSuccess = document.querySelector<HTMLDivElement>('#payNowSuccess')!
 const toast = document.querySelector<HTMLDivElement>('#toast')!
 const accountHistoryList = document.querySelector<HTMLDivElement>('#accountHistory')!
@@ -1573,33 +1553,25 @@ function currentAccountIsActive() {
 function updateRequestButton() {
   if (!cart.length) {
     payNowButton.disabled = true
-    requestInvoiceButton.disabled = true
     payNowButton.textContent = 'Pay Now'
-    requestInvoiceButton.textContent = 'Request Invoice by Email'
     return
   }
 
   if (!currentProfile) {
     payNowButton.disabled = false
-    requestInvoiceButton.disabled = false
     payNowButton.textContent = 'Sign In to Pay'
-    requestInvoiceButton.textContent = 'Sign In to Request Invoice'
     return
   }
 
   if (!currentAccountIsActive()) {
     payNowButton.textContent = 'Account Suspended'
-    requestInvoiceButton.textContent = 'Account Suspended'
     payNowButton.disabled = true
-    requestInvoiceButton.disabled = true
     return
   }
 
   const locked = Boolean(activeCheckoutOrder)
   payNowButton.textContent = locked ? 'Pay Now Order Started' : 'Pay Now'
-  requestInvoiceButton.textContent = locked ? 'Pay Now Order Started' : 'Request Invoice by Email'
   payNowButton.disabled = !policyAcknowledgment.checked || locked
-  requestInvoiceButton.disabled = !policyAcknowledgment.checked || locked
 }
 
 async function ensureCheckoutOrder(paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle') {
@@ -1659,7 +1631,6 @@ async function finishPayNow(
   document.querySelector<HTMLElement>('#payNowSuccessTitle')!.textContent = title
   document.querySelector<HTMLElement>('#payNowSuccessCopy')!.textContent = copy
   document.querySelector<HTMLElement>('#payNowOrderNumber')!.textContent = orderNumber
-  invoiceSuccess.hidden = true
   payNowSuccess.hidden = false
 
   activeCheckoutOrder = null
@@ -2662,7 +2633,6 @@ document.querySelector<HTMLButtonElement>('#backPolicyToMenu')!.addEventListener
 
 document.querySelector<HTMLButtonElement>('#closeReferralDialog')!.addEventListener('click', () => referralDialog.close())
 document.querySelector<HTMLButtonElement>('#backReferralToMenu')!.addEventListener('click', () => returnToMenu(referralDialog))
-document.querySelector<HTMLButtonElement>('#successCloseButton')!.addEventListener('click', () => cartDialog.close())
 document.querySelector<HTMLButtonElement>('#payNowSuccessCloseButton')!.addEventListener('click', () => cartDialog.close())
 
 menuButton.addEventListener('click', () => {
@@ -2707,7 +2677,6 @@ accountButton.addEventListener('click', () => {
 })
 
 function openCartDialog() {
-  invoiceSuccess.hidden = true
   payNowSuccess.hidden = true
   cartEmpty.hidden = cart.length > 0
   cartContent.hidden = cart.length === 0
@@ -2756,11 +2725,9 @@ mobileCartButton.addEventListener('click', () => {
 })
 
 cartButton.addEventListener('click', () => {
-  invoiceSuccess.hidden = true
   payNowSuccess.hidden = true
   cartEmpty.hidden = cart.length > 0
   cartContent.hidden = cart.length === 0
-  invoiceRequestMessage.textContent = ''
   updateCartUI()
   cartDialog.showModal()
 })
@@ -2773,7 +2740,6 @@ document.querySelector<HTMLButtonElement>('#cartSignInButton')!.addEventListener
 policyAcknowledgment.addEventListener('change', updateRequestButton)
 
 payNowButton.addEventListener('click', async () => {
-  invoiceSuccess.hidden = true
   payNowSuccess.hidden = true
   if (!currentProfile) {
     cartDialog.close()
@@ -2837,67 +2803,6 @@ accountManageForm.addEventListener('submit', async event => {
 refreshHistoryButton.addEventListener('click', () => {
   void refreshOrderHistory()
 })
-
-requestInvoiceButton.addEventListener('click', async () => {
-  cartPayPanel.hidden = true
-  cartZellePanel.hidden = true
-  payNowSuccess.hidden = true
-  invoiceSuccess.hidden = true
-  if (!currentProfile) {
-    cartDialog.close()
-    accountDialog.showModal()
-    return
-  }
-
-  if (!currentAccountIsActive()) {
-    showToast('This account is suspended. Contact support for assistance.')
-    return
-  }
-
-  if (!policyAcknowledgment.checked) {
-    showToast('Please acknowledge the policies first.')
-    return
-  }
-
-  invoiceRequestMessage.textContent = ''
-  requestInvoiceButton.disabled = true
-  requestInvoiceButton.textContent = 'Creating Request…'
-
-  try {
-    const result = await requestInvoice(cart, {
-      policyAcknowledged: true,
-      contactMethod: contactMethod.value,
-      customerNotes: customerNotes.value.trim(),
-      discountCode: appliedDiscount?.code || '',
-    })
-
-    clearCart()
-    cart = []
-    policyAcknowledgment.checked = false
-    customerNotes.value = ''
-    appliedDiscount = null
-    appliedDiscountCartSignature = ''
-    discountCodeInput.value = ''
-    discountCodeMessage.textContent = ''
-    updateCartUI()
-
-    payNowSuccess.hidden = true
-    document.querySelector<HTMLElement>('#successInvoiceNumber')!.textContent =
-      result.invoiceNumber || 'Pending'
-    cartContent.hidden = true
-    cartEmpty.hidden = true
-    invoiceSuccess.hidden = false
-    await refreshOrderHistory()
-  } catch (error) {
-    invoiceRequestMessage.textContent =
-      error instanceof Error ? error.message : 'Invoice request failed.'
-    updateRequestButton()
-  } finally {
-    if (!invoiceSuccess.hidden) return
-    requestInvoiceButton.textContent = currentProfile ? 'Request Invoice by Email' : 'Sign In to Request Invoice'
-  }
-})
-
 
 createAccountButton.addEventListener('click', () => {
   showSignupView()
