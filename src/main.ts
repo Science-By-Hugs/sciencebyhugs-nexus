@@ -37,7 +37,6 @@ import { createCheckoutOrder, type CheckoutOrderResult } from './services/checko
 import { getMyOrderHistory, type NexusOrderHistory } from './services/accountHistory'
 import { capturePayPalOrder, createPayPalOrder, getPayPalSdk } from './services/paypal'
 import { getZelleConfig, submitZellePayment } from './services/zelle'
-import { getInvoicePdfLink } from './services/invoicePdf'
 import { nexusPolicies } from './policies'
 import {
   buildReferralLink,
@@ -271,7 +270,7 @@ app.innerHTML = `
         <span>CATALOG</span><strong>Research Catalog</strong><small>Browse available products.</small>
       </button>
       <button class="menu-card" type="button" data-menu-target="account">
-        <span>ACCOUNT</span><strong>My Account</strong><small>Orders, invoices, profile, and security.</small>
+        <span>ACCOUNT</span><strong>My Account</strong><small>Orders, receipts, profile, and security.</small>
       </button>
       <button class="menu-card" type="button" data-menu-target="referral">
         <span>REFERRALS</span><strong>Refer a Friend</strong><small>Referral rewards and progress.</small>
@@ -322,7 +321,7 @@ app.innerHTML = `
       <div class="support-info-card">
         <span class="eyebrow">SCIENCE BY HUGs</span>
         <strong>Customer Support</strong>
-        <p>For account, order, invoice, payment, or general questions, include your customer ID or order number when available.</p>
+        <p>For account, order, receipt, payment, or general questions, include your customer ID or order number when available.</p>
       </div>
     </div>
   </dialog>
@@ -382,7 +381,7 @@ app.innerHTML = `
     <div class="cart-heading">
       <span class="eyebrow">NEXUS CHECKOUT</span>
       <h2>Your research cart.</h2>
-      <p>Review your items, acknowledge the policies, then pay now or request an invoice by email.</p>
+      <p>Review your items, acknowledge the policies, then pay securely.</p>
     </div>
 
     <div id="cartEmpty" class="cart-empty">
@@ -474,10 +473,10 @@ app.innerHTML = `
         <button id="payNowButton" class="request-invoice-button" type="button">
           Pay Now
         </button>
-        <button id="requestInvoiceButton" class="auth-secondary checkout-invoice-button" type="button">
+        <button id="requestInvoiceButton" class="auth-secondary checkout-invoice-button" type="button" hidden>
           Request Invoice by Email
         </button>
-        <p>Pay now with PayPal, Venmo, Apple Pay, or Zelle — or request an invoice and pay later.</p>
+        <p>Pay securely with PayPal, Venmo, Apple Pay, or Zelle. A receipt is saved to your account once payment is confirmed.</p>
       </section>
 
       <section id="cartPayPanel" class="cart-pay-panel" hidden>
@@ -544,7 +543,7 @@ app.innerHTML = `
         <img class="auth-brand-logo" src="${nexusLogoUrl}" alt="Nexus — Science By Hugs" />
         <span class="auth-status-pill"><i></i> SECURE CUSTOMER ACCESS</span>
         <h2>Welcome to <em>Nexus.</em></h2>
-        <p class="account-copy">Your Science By Hugs account connects orders, invoices, rewards, and research access in one place.</p>
+        <p class="account-copy">Your Science By Hugs account connects orders, receipts, rewards, and research access in one place.</p>
       </div>
 
       <form id="loginForm" class="auth-form auth-card">
@@ -655,7 +654,7 @@ app.innerHTML = `
           </button>
           <button id="orderActivityButton" class="account-hub-card" type="button">
             <span class="account-hub-icon">◇</span>
-            <span><strong>Order Activity</strong><small>Orders, payments & invoices</small></span>
+            <span><strong>Order Activity</strong><small>Orders, payments & receipts</small></span>
             <b>→</b>
           </button>
           <button id="accountReferralButton" class="account-hub-card" type="button">
@@ -737,7 +736,7 @@ app.innerHTML = `
           <div class="account-history-heading">
             <div>
               <span class="eyebrow">ORDER ACTIVITY</span>
-              <h3>Orders & invoices</h3>
+              <h3>Orders & receipts</h3>
             </div>
             <button id="refreshHistoryButton" class="history-refresh" type="button">Refresh</button>
           </div>
@@ -1693,9 +1692,7 @@ async function setupCartPayNow() {
           }
           await finishPayNow(
             'Payment received.',
-            capture.invoicePdfReady === false
-              ? 'Your PayPal payment was verified and your order is processing. Your invoice is still being finalized.'
-              : 'Your PayPal payment was verified and your order is now processing.',
+            'Your PayPal payment was verified and your order is now processing Your receipt is in My Account → Order Activity.',
           )
         } catch (error) {
           cartPayMessage.textContent =
@@ -1722,9 +1719,7 @@ async function setupCartPayNow() {
           }
           await finishPayNow(
             'Payment received.',
-            capture.invoicePdfReady === false
-              ? 'Your Venmo payment was verified and your order is processing. Your invoice is still being finalized.'
-              : 'Your Venmo payment was verified and your order is now processing.',
+            'Your Venmo payment was verified and your order is now processing Your receipt is in My Account → Order Activity.',
           )
         } catch (error) {
           cartPayMessage.textContent =
@@ -1874,9 +1869,7 @@ async function setupCartPayNow() {
 
               await finishPayNow(
                 'Payment received.',
-                capture.invoicePdfReady === false
-                  ? 'Your Apple Pay payment was verified and your order is processing. Your invoice is still being finalized.'
-                  : 'Your Apple Pay payment was verified and your order is now processing.',
+                'Your Apple Pay payment was verified and your order is now processing Your receipt is in My Account → Order Activity.',
               )
             } catch (error) {
               console.error('Apple Pay payment failed', error)
@@ -2020,6 +2013,101 @@ const deliveryDate = (value: string) => new Intl.DateTimeFormat('en-US', {
   weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
 }).format(new Date(value + 'T00:00:00Z'))
 
+const receiptDateTime = (value: string | null | undefined) =>
+  value
+    ? new Intl.DateTimeFormat('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+      }).format(new Date(value))
+    : '—'
+
+function closeReceipt() {
+  document.querySelector('.receipt-overlay')?.remove()
+  document.body.classList.remove('receipt-open')
+}
+
+function openReceipt(order: NexusOrderHistory) {
+  closeReceipt()
+  const number = order.order_number || order.invoice?.invoice_number || order.id.slice(0, 8).toUpperCase()
+  const paidAt = order.payment?.verified_at || order.payment?.paid_at || order.paid_at || order.created_at
+  const customerName = [currentProfile?.first_name, currentProfile?.last_name].filter(Boolean).join(' ') || 'Customer'
+  const discount = order.discount_total + order.shipping_discount_total
+  const row = (label: string, value: string, className = '') =>
+    `<div class="receipt-row ${className}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`
+
+  const overlay = document.createElement('div')
+  overlay.className = 'receipt-overlay'
+  overlay.setAttribute('role', 'dialog')
+  overlay.setAttribute('aria-modal', 'true')
+  overlay.setAttribute('aria-label', 'Receipt ' + number)
+  overlay.innerHTML = `
+    <article class="receipt-sheet">
+      <header class="receipt-head">
+        <div>
+          <strong class="receipt-brand">Science By Hugs</strong>
+          <small>NEXUS · Research-use-only supplies</small>
+        </div>
+        <div class="receipt-title">
+          <span>RECEIPT</span>
+          <strong>${escapeHtml(number)}</strong>
+        </div>
+      </header>
+
+      <section class="receipt-meta">
+        <div><span>Paid</span><strong>${escapeHtml(receiptDateTime(paidAt))}</strong></div>
+        <div><span>Order placed</span><strong>${escapeHtml(receiptDateTime(order.created_at))}</strong></div>
+        <div><span>Payment method</span><strong>${escapeHtml(order.payment?.provider || order.payment_method || '—')}</strong></div>
+        <div><span>Payment status</span><strong>Paid</strong></div>
+        <div><span>Customer</span><strong>${escapeHtml(customerName)}</strong></div>
+        <div><span>Customer ID</span><strong>${escapeHtml(currentProfile?.customer_number || '—')}</strong></div>
+        ${currentProfile?.email ? `<div class="receipt-span"><span>Email</span><strong>${escapeHtml(currentProfile.email)}</strong></div>` : ''}
+      </section>
+
+      <section class="receipt-items">
+        <div class="receipt-item receipt-item-head"><span>Item</span><span>Qty</span><span>Price</span><span>Total</span></div>
+        ${order.items.map(item => `
+          <div class="receipt-item">
+            <span>${escapeHtml(item.product_name)}</span>
+            <span>${item.quantity}</span>
+            <span>${money(item.unit_price)}</span>
+            <span>${money(item.line_total)}</span>
+          </div>
+        `).join('') || '<div class="receipt-item"><span>Item details unavailable.</span></div>'}
+      </section>
+
+      <section class="receipt-totals">
+        ${row('Subtotal', money(order.subtotal))}
+        ${discount > 0 ? row('Discount' + (order.discount_code ? ' (' + order.discount_code + ')' : ''), '-' + money(discount)) : ''}
+        ${row('Shipping', money(order.shipping_total))}
+        ${order.processing_fee_total > 0 ? row('Processing fee', money(order.processing_fee_total)) : ''}
+        ${row('Tax', money(order.tax_total))}
+        ${row('Total paid', money(order.total), 'receipt-grand')}
+      </section>
+
+      <footer class="receipt-foot">
+        <p>Thank you for your order. Questions? Email support@sciencebyhugs.com and include receipt ${escapeHtml(number)}.</p>
+        <p>All products are sold for research use only.</p>
+      </footer>
+
+      <div class="receipt-actions">
+        <button type="button" class="auth-secondary receipt-close">Close</button>
+        <button type="button" class="auth-primary receipt-print">Print / Save as PDF</button>
+      </div>
+    </article>
+  `
+  overlay.addEventListener('click', event => {
+    if (event.target === overlay) closeReceipt()
+  })
+  overlay.querySelector<HTMLButtonElement>('.receipt-close')?.addEventListener('click', closeReceipt)
+  overlay.querySelector<HTMLButtonElement>('.receipt-print')?.addEventListener('click', () => window.print())
+  document.body.appendChild(overlay)
+  document.body.classList.add('receipt-open')
+  overlay.querySelector<HTMLButtonElement>('.receipt-print')?.focus()
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.querySelector('.receipt-overlay')) closeReceipt()
+})
+
 function renderAccountHistory() {
   if (!currentProfile) {
     accountHistoryList.innerHTML = '<div class="history-state">Sign in to view your order history.</div>'
@@ -2034,7 +2122,9 @@ function renderAccountHistory() {
   accountHistoryList.innerHTML = accountHistory.map(order => {
     const invoiceLabel = order.invoice?.invoice_number || order.order_number || 'Pending'
     const invoiceSent = order.invoice?.send_status === 'sent'
-    const directCheckout = order.invoice?.status === 'direct_checkout'
+    const directCheckout =
+      order.invoice?.status === 'direct_checkout' ||
+      (!order.invoice && order.status === 'checkout_pending')
     const paymentVerified =
       order.payment?.status === 'verified' ||
       order.payment_status === 'paid'
@@ -2125,13 +2215,13 @@ function renderAccountHistory() {
           </div>
         ` : ''}
 
-        ${directCheckout && order.invoice?.pdf_status === 'created' ? `
+        ${paymentVerified ? `
           <button
             class="history-pdf-button"
             type="button"
-            data-invoice-pdf-id="${escapeHtml(order.invoice.id)}"
+            data-receipt-order-id="${escapeHtml(order.id)}"
           >
-            View Invoice PDF
+            View Receipt
           </button>
         ` : ''}
 
@@ -2169,7 +2259,7 @@ function renderAccountHistory() {
             <div class="zelle-shell" data-zelle-shell="${escapeHtml(order.id)}" hidden>
               <div class="zelle-head">
                 <strong>Pay with Zelle</strong>
-                <small>Send the exact invoice total, then report the payment below.</small>
+                <small>Send the exact order total, then report the payment below.</small>
               </div>
               <div class="zelle-details" data-zelle-details="${escapeHtml(order.id)}"></div>
               <label class="zelle-confirmation-label">
@@ -2197,27 +2287,10 @@ function renderAccountHistory() {
     `
   }).join('')
 
-  accountHistoryList.querySelectorAll<HTMLButtonElement>('[data-invoice-pdf-id]').forEach(button => {
-    button.addEventListener('click', async () => {
-      const invoiceId = button.dataset.invoicePdfId
-      if (!invoiceId) return
-
-      const popup = window.open('', '_blank')
-      const original = button.textContent
-      button.disabled = true
-      button.textContent = 'Opening PDF…'
-
-      try {
-        const result = await getInvoicePdfLink(invoiceId)
-        if (popup) popup.location.href = result.url
-        else window.location.href = result.url
-      } catch (error) {
-        if (popup) popup.close()
-        showToast(error instanceof Error ? error.message : 'Could not open invoice PDF')
-      } finally {
-        button.disabled = false
-        button.textContent = original || 'View Invoice PDF'
-      }
+  accountHistoryList.querySelectorAll<HTMLButtonElement>('[data-receipt-order-id]').forEach(button => {
+    button.addEventListener('click', () => {
+      const order = accountHistory.find(candidate => candidate.id === button.dataset.receiptOrderId)
+      if (order) openReceipt(order)
     })
   })
 

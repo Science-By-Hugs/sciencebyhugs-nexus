@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
+// Google exit (2026-10-27): no Apps Script / Sheets / Drive calls.
+// Order numbers are assigned in Supabase via public.assign_order_number().
+// Base: deployed version 14.
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://nexus.sciencebyhugs.com",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -37,7 +41,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(
     supabaseUrl,
-    secretKeys.default,
+    secretKeys.nexus_rotation_20261023,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
@@ -52,17 +56,11 @@ Deno.serve(async (req: Request) => {
   }
 
   const runtimeConfig = runtimeConfigRow.value as {
-    appsScriptUrl?: string;
     shippingRates?: Record<string, number>;
     foundingMemberFreeShippingSource?: string;
   };
-  const APPS_SCRIPT_URL = String(runtimeConfig.appsScriptUrl || "").trim();
   const SHIPPING_RATES = runtimeConfig.shippingRates || {};
   const FREE_SHIPPING_SOURCE = String(runtimeConfig.foundingMemberFreeShippingSource || "").trim();
-
-  if (!APPS_SCRIPT_URL) {
-    return json({ error: "Checkout configuration unavailable" }, 503);
-  }
 
   const { data: { user }, error: userError } = await userClient.auth.getUser();
   if (userError || !user) return json({ error: "Invalid session" }, 401);
@@ -73,6 +71,7 @@ Deno.serve(async (req: Request) => {
     policyAcknowledged?: boolean;
     contactMethod?: string | null;
     customerNotes?: string | null;
+    discountCode?: string | null;
     paymentMethod?: string | null;
   };
 
@@ -156,7 +155,6 @@ Deno.serve(async (req: Request) => {
   }
 
   const subtotal = money(validatedItems.reduce((sum, item) => sum + item.lineTotal, 0));
-  const discount = 0;
   const membershipName = String(profile.memberships?.name || "");
   const isFoundingMember = membershipName.trim().toLowerCase() === "founding member";
 
@@ -171,6 +169,31 @@ Deno.serve(async (req: Request) => {
   }
   shipping = money(shipping);
 
+  let discount = 0;
+  let shippingDiscountApplied = 0;
+  let discountCodeId: string | null = null;
+  let discountCodeValue: string | null = null;
+  let discountOneTime = false;
+  const requestedDiscountCode = String(body.discountCode || "").trim();
+
+  if (requestedDiscountCode) {
+    const { data: discountEval, error: discountError } = await admin.rpc("evaluate_discount_code", {
+      p_code: requestedDiscountCode,
+      p_profile_id: profile.id,
+      p_subtotal: subtotal,
+      p_shipping: shipping,
+    });
+    if (discountError) return json({ error: "Could not validate discount code" }, 500);
+    if (!discountEval?.valid) return json({ error: discountEval?.error || "Discount code is not valid" }, 409);
+
+    discount = money(Number(discountEval.merchandiseDiscount || 0));
+    shippingDiscountApplied = money(Number(discountEval.shippingDiscount || 0));
+    shipping = money(Math.max(0, shipping - shippingDiscountApplied));
+    discountCodeId = String(discountEval.id || "") || null;
+    discountCodeValue = String(discountEval.code || "") || null;
+    discountOneTime = discountEval.oneTime === true;
+  }
+
   const taxableMerchandise = money(Math.max(0, subtotal - discount));
   const processingFee =
     paymentMethod === "PayPal" || paymentMethod === "Venmo" || paymentMethod === "Apple Pay"
@@ -179,8 +202,6 @@ Deno.serve(async (req: Request) => {
   const tax = money((taxableMerchandise + processingFee) * 0.08);
   const total = money(subtotal - discount + shipping + processingFee + tax);
   const now = new Date().toISOString();
-  const requestToken = crypto.randomUUID();
-  const customerName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
 
   const { data: order, error: orderError } = await admin
     .from("orders")
@@ -189,6 +210,9 @@ Deno.serve(async (req: Request) => {
       status: "checkout_pending",
       subtotal,
       discount_total: discount,
+      shipping_discount_total: shippingDiscountApplied,
+      discount_code_id: discountCodeId,
+      discount_code: discountCodeValue,
       shipping_total: shipping,
       tax_total: tax,
       processing_fee_total: processingFee,
@@ -200,10 +224,22 @@ Deno.serve(async (req: Request) => {
       submitted_at: now,
       admin_notes: "Nexus Pay Now checkout",
     })
-.select("id,created_at")
+    .select("id,created_at")
     .single();
 
   if (orderError || !order) return json({ error: "Could not create checkout order" }, 500);
+
+  if (discountOneTime && discountCodeId) {
+    const { data: claimed, error: claimError } = await admin.rpc("claim_one_time_discount_code", {
+      p_discount_id: discountCodeId,
+      p_profile_id: profile.id,
+      p_order_id: order.id,
+    });
+    if (claimError || claimed !== true) {
+      await admin.from("orders").delete().eq("id", order.id);
+      return json({ error: "This one-time discount code was already used." }, 409);
+    }
+  }
 
   const orderItems = validatedItems.map(item => ({
     order_id: order.id,
@@ -224,188 +260,26 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Could not save checkout items" }, 500);
   }
 
-  // PayPal/Venmo/Apple Pay fast path: return as soon as the secure Science By Hugs
-  // order and line items exist. Branded invoice/PDF generation is finalized
-  // after the provider confirms payment in paypal-capture-order.
-  if (paymentMethod === "PayPal" || paymentMethod === "Venmo" || paymentMethod === "Apple Pay") {
-    return json({
-      success: true,
-      orderId: order.id,
-      orderNumber: "",
-      invoicePdfReady: false,
-      totals: { subtotal, discount, shipping, processingFee, tax, total },
-    });
-  }
-
-  const bridgePayload = {
-    bridgeKey: secretKeys.default,
-    requestToken,
-    orderId: order.id,
-    paymentMethod,
-    paymentStatus: "Pending Payment",
-    customer: {
-      customerId: profile.customer_number || "",
-      firstName: profile.first_name || "",
-      lastName: profile.last_name || "",
-      name: customerName,
-      email: profile.email || user.email || "",
-      phone: profile.phone || "",
-      membership: membershipName,
-      accountStatus: profile.account_status || "Active",
-      contactMethod: body.contactMethod?.trim() || "",
-    },
-    items: validatedItems,
-    totals: { subtotal, discount, shipping, processingFee, tax, total },
-    notes: body.customerNotes?.trim() || "",
-  };
-
-  let sheetResponse: Response;
-  let sheetData: {
-    success?: boolean;
-    invoiceNumber?: string;
-    invoiceSheet?: string;
-    invoiceSheetUrl?: string;
-    error?: string;
-  };
-
-  try {
-    sheetResponse = await fetch(
-      `${APPS_SCRIPT_URL}?api=nexusInvoiceRequest`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bridgePayload),
-        redirect: "follow",
-      },
-    );
-    sheetData = await sheetResponse.json();
-  } catch {
-    await admin.from("orders").update({
-      status: "checkout_sync_error",
-      admin_notes: "Nexus Pay Now checkout: branded invoice bridge unavailable",
-    }).eq("id", order.id);
-    return json({ error: "Could not create the branded invoice" }, 503);
-  }
-
-  if (!sheetResponse.ok || !sheetData.success || !sheetData.invoiceNumber || !sheetData.invoiceSheet) {
-    await admin.from("orders").update({
-      status: "checkout_sync_error",
-      admin_notes: `Nexus Pay Now checkout: ${sheetData.error || "branded invoice bridge rejected request"}`,
-    }).eq("id", order.id);
-    return json({ error: sheetData.error || "Could not create the branded invoice" }, 502);
-  }
-
-  const pdfPayload = {
-    bridgeKey: secretKeys.default,
-    invoiceNumber: sheetData.invoiceNumber,
-    invoiceSheet: sheetData.invoiceSheet,
-  };
-
-  let pdfResponse: Response;
-  let pdfData: {
-    success?: boolean;
-    pdfFileId?: string;
-    pdfUrl?: string;
-    pdfName?: string;
-    error?: string;
-  };
-
-  try {
-    pdfResponse = await fetch(
-      `${APPS_SCRIPT_URL}?api=approveNexusInvoice`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pdfPayload),
-        redirect: "follow",
-      },
-    );
-    pdfData = await pdfResponse.json();
-  } catch {
-    await admin.from("orders").update({
-      order_number: sheetData.invoiceNumber,
-      status: "checkout_sync_error",
-      admin_notes: "Nexus Pay Now checkout: branded PDF bridge unavailable",
-    }).eq("id", order.id);
-    return json({
-      error: "Branded invoice was created, but its PDF could not be generated",
-      invoiceNumber: sheetData.invoiceNumber,
-    }, 503);
-  }
-
-  if (!pdfResponse.ok || !pdfData.success || !pdfData.pdfUrl) {
-    await admin.from("orders").update({
-      order_number: sheetData.invoiceNumber,
-      status: "checkout_sync_error",
-      admin_notes: `Nexus Pay Now checkout: ${pdfData.error || "branded PDF bridge failed"}`,
-    }).eq("id", order.id);
-    return json({
-      error: pdfData.error || "Branded invoice was created, but its PDF could not be generated",
-      invoiceNumber: sheetData.invoiceNumber,
-    }, 502);
-  }
-
-  const { data: record, error: recordError } = await admin
-    .from("invoices")
-    .insert({
-      invoice_number: sheetData.invoiceNumber,
-      order_id: order.id,
-      customer_id: profile.id,
-      status: "direct_checkout",
-      subtotal,
-      shipping_total: shipping,
-      discount_total: discount,
-      tax_total: tax,
-      processing_fee_total: processingFee,
-      total,
-      payment_method: paymentMethod,
-      google_sheet_name: sheetData.invoiceSheet,
-      google_sheet_url: sheetData.invoiceSheetUrl || null,
-      pdf_status: "created",
-      pdf_url: pdfData.pdfUrl,
-      pdf_created_at: now,
-      send_status: "not_sent",
-      contact_method: body.contactMethod?.trim() || null,
-      customer_name_snapshot: customerName,
-      customer_email_snapshot: profile.email || user.email || "",
-      customer_phone_snapshot: profile.phone || "",
-    })
-.select("id,invoice_number")
-    .single();
-
-  if (recordError || !record) {
-    await admin.from("orders").update({
-      status: "checkout_sync_error",
-      admin_notes: "Nexus Pay Now checkout created, but Core operation record failed",
-    }).eq("id", order.id);
-    return json({ error: "Checkout order created but Core synchronization needs review" }, 500);
-  }
-
-  await admin.from("orders").update({
-    order_number: sheetData.invoiceNumber,
-    status: "checkout_pending",
-    admin_notes: `Nexus Pay Now checkout ${requestToken}: branded invoice PDF ready`,
-  }).eq("id", order.id);
-
-  await admin.from("invoice_events").insert({
-    invoice_id: record.id,
-    event_type: "direct_checkout_created",
-    description: "Customer started Pay Now checkout and branded invoice PDF was created automatically.",
-    metadata: {
-      source: "nexus_pay_now",
-      requestToken,
-      autoApproved: true,
-      pdfFileId: pdfData.pdfFileId || null,
-      pdfUrl: pdfData.pdfUrl,
-    },
+  // Supabase-native order number (replaces the Google invoice number).
+  // A numbering failure must never block checkout; capture/Core can assign it later.
+  let orderNumber = "";
+  const { data: assigned, error: numberError } = await admin.rpc("assign_order_number", {
+    p_order_id: order.id,
   });
+  if (!numberError && assigned) {
+    orderNumber = String(assigned);
+  } else {
+    await admin.from("orders").update({
+      admin_notes: "Nexus Pay Now checkout: order number assignment needs review",
+    }).eq("id", order.id);
+  }
 
   return json({
     success: true,
     orderId: order.id,
-    orderNumber: sheetData.invoiceNumber,
-    invoicePdfReady: true,
-    pdfUrl: pdfData.pdfUrl,
-    totals: { subtotal, discount, shipping, processingFee, tax, total },
+    orderNumber,
+    invoicePdfReady: false,
+    discountCode: discountCodeValue,
+    totals: { subtotal, discount, shippingDiscount: shippingDiscountApplied, totalSavings: money(discount + shippingDiscountApplied), shipping, processingFee, tax, total },
   });
 });

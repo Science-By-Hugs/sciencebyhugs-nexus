@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
+// Google exit (2026-10-27): branded invoice / Apps Script / Drive PDF step removed.
+// Order number is assigned in Supabase via public.assign_order_number() (idempotent).
+// Payment capture and verification logic unchanged from deployed version 17.
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://nexus.sciencebyhugs.com",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -68,218 +72,23 @@ async function qualifyReferral(
 }
 
 
-async function finalizeBrandedInvoice(
+async function ensureOrderNumber(
   admin: ReturnType<typeof createClient>,
-  bridgeKey: string,
-  userEmail: string,
-  profile: any,
-  order: any,
-  provider: "PayPal" | "Venmo" | "Apple Pay",
-  now: string,
-) {
-  const { data: runtimeConfigRow, error: runtimeConfigError } = await admin
-    .from("internal_runtime_config")
-    .select("value")
-    .eq("key", "checkout")
-    .single();
-
-  const appsScriptUrl = String(runtimeConfigRow?.value?.appsScriptUrl || "").trim();
-  if (runtimeConfigError || !appsScriptUrl) {
-    throw new Error("Invoice configuration unavailable");
-  }
-
-  const { data: existingInvoice } = await admin
-    .from("invoices")
-    .select("id,invoice_number,pdf_url")
-    .eq("order_id", order.id)
-    .maybeSingle();
-
-  if (existingInvoice?.id) {
-    await admin
-      .from("invoices")
-      .update({ payment_method: provider, paid_at: now })
-      .eq("id", existingInvoice.id);
-
-    return {
-      success: true,
-      invoiceId: existingInvoice.id,
-      orderNumber: existingInvoice.invoice_number || order.order_number || null,
-      pdfUrl: existingInvoice.pdf_url || null,
-      existing: true,
-    };
-  }
-
-  try {
-    const { data: itemRows, error: itemError } = await admin
-      .from("order_items")
-      .select("product_id,product_code,product_name,quantity,unit_price,line_total")
-      .eq("order_id", order.id)
-      .order("created_at", { ascending: true });
-
-    if (itemError || !itemRows?.length) {
-      throw new Error("Checkout items could not be loaded for invoice generation");
-    }
-
-    const customerName = [profile.first_name, profile.last_name]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-    const membershipName = String(profile.memberships?.name || "");
-    const requestToken = `nexus-paid-${order.id}`;
-
-    const bridgePayload = {
-      bridgeKey,
-      requestToken,
-      orderId: order.id,
-      paymentMethod: provider,
-      paymentStatus: "Paid",
-      customer: {
-        customerId: profile.customer_number || "",
-        firstName: profile.first_name || "",
-        lastName: profile.last_name || "",
-        name: customerName,
-        email: profile.email || userEmail || "",
-        phone: profile.phone || "",
-        membership: membershipName,
-        accountStatus: profile.account_status || "Active",
-        contactMethod: order.contact_method || "",
-      },
-      items: itemRows.map((item: any) => ({
-        productId: item.product_id,
-        productCode: item.product_code,
-        productName: item.product_name,
-        quantity: Number(item.quantity || 0),
-        unitPrice: Number(item.unit_price || 0),
-        lineTotal: Number(item.line_total || 0),
-      })),
-      totals: {
-        subtotal: Number(order.subtotal || 0),
-        discount: Number(order.discount_total || 0),
-        shipping: Number(order.shipping_total || 0),
-        processingFee: Number(order.processing_fee_total || 0),
-        tax: Number(order.tax_total || 0),
-        total: Number(order.total || 0),
-      },
-      notes: order.customer_notes || "",
-    };
-
-    const sheetResponse = await fetch(
-      `${appsScriptUrl}?api=nexusInvoiceRequest`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bridgePayload),
-        redirect: "follow",
-      },
-    );
-    const sheetData = await sheetResponse.json();
-
-    if (
-      !sheetResponse.ok ||
-      !sheetData?.success ||
-      !sheetData?.invoiceNumber ||
-      !sheetData?.invoiceSheet
-    ) {
-      throw new Error(sheetData?.error || "Branded invoice bridge rejected request");
-    }
-
-    const pdfResponse = await fetch(
-      `${appsScriptUrl}?api=approveNexusInvoice`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bridgeKey,
-          invoiceNumber: sheetData.invoiceNumber,
-          invoiceSheet: sheetData.invoiceSheet,
-        }),
-        redirect: "follow",
-      },
-    );
-    const pdfData = await pdfResponse.json();
-
-    if (!pdfResponse.ok || !pdfData?.success || !pdfData?.pdfUrl) {
-      throw new Error(pdfData?.error || "Branded invoice PDF could not be generated");
-    }
-
-    const { data: invoiceRecord, error: invoiceError } = await admin
-      .from("invoices")
-      .insert({
-        invoice_number: sheetData.invoiceNumber,
-        order_id: order.id,
-        customer_id: profile.id,
-        status: "direct_checkout",
-        subtotal: Number(order.subtotal || 0),
-        shipping_total: Number(order.shipping_total || 0),
-        discount_total: Number(order.discount_total || 0),
-        tax_total: Number(order.tax_total || 0),
-        processing_fee_total: Number(order.processing_fee_total || 0),
-        total: Number(order.total || 0),
-        payment_method: provider,
-        paid_at: now,
-        google_sheet_name: sheetData.invoiceSheet,
-        google_sheet_url: sheetData.invoiceSheetUrl || null,
-        pdf_status: "created",
-        pdf_url: pdfData.pdfUrl,
-        pdf_created_at: now,
-        send_status: "not_sent",
-        contact_method: order.contact_method || null,
-        customer_name_snapshot: customerName,
-        customer_email_snapshot: profile.email || userEmail || "",
-        customer_phone_snapshot: profile.phone || "",
-      })
-      .select("id,invoice_number")
-      .single();
-
-    if (invoiceError || !invoiceRecord) {
-      throw new Error("Core invoice record could not be created");
-    }
-
+  order: { id: string; order_number: string | null },
+): Promise<string | null> {
+  if (order.order_number) return order.order_number;
+  const { data, error } = await admin.rpc("assign_order_number", { p_order_id: order.id });
+  if (error || !data) {
     await admin
       .from("orders")
       .update({
-        order_number: sheetData.invoiceNumber,
-        admin_notes: `Nexus Pay Now: payment captured and branded invoice PDF ready`,
-        updated_at: now,
+        admin_notes: "Payment captured successfully; order number assignment needs review",
+        updated_at: new Date().toISOString(),
       })
       .eq("id", order.id);
-
-    await admin.from("invoice_events").insert({
-      invoice_id: invoiceRecord.id,
-      event_type: "direct_checkout_created",
-      description: "Branded invoice PDF created after verified Nexus payment.",
-      metadata: {
-        source: "nexus_pay_now_post_payment",
-        requestToken,
-        autoApproved: true,
-        pdfFileId: pdfData.pdfFileId || null,
-        pdfUrl: pdfData.pdfUrl,
-      },
-    });
-
-    return {
-      success: true,
-      invoiceId: invoiceRecord.id,
-      orderNumber: sheetData.invoiceNumber,
-      pdfUrl: pdfData.pdfUrl,
-      existing: false,
-    };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invoice synchronization failed";
-
-    await admin
-      .from("orders")
-      .update({
-        admin_notes:
-          "Payment captured successfully; branded invoice synchronization needs review: " +
-          message,
-        updated_at: now,
-      })
-      .eq("id", order.id);
-
-    return { success: false, error: message, orderNumber: order.order_number || null };
+    return null;
   }
+  return String(data);
 }
 
 function paypalBaseUrl() {
@@ -330,7 +139,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(
     supabaseUrl,
-    secretKeys.default,
+    secretKeys.nexus_rotation_20261023,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
@@ -375,7 +184,8 @@ Deno.serve(async (req: Request) => {
   if (orderError || !order) return json({ error: "Order not found" }, 404);
 
   if (order.payment_status === "paid") {
-    return json({ success: true, alreadyPaid: true, orderId: order.id });
+    const existingNumber = await ensureOrderNumber(admin, order);
+    return json({ success: true, alreadyPaid: true, orderId: order.id, orderNumber: existingNumber });
   }
 
   const { data: payment } = await admin
@@ -458,31 +268,21 @@ Deno.serve(async (req: Request) => {
     })
     .eq("id", order.id);
 
-  const invoiceSync = await finalizeBrandedInvoice(
-    admin,
-    secretKeys.default,
-    user.email || "",
-    profile,
-    order,
-    provider,
-    now,
-  );
+  const orderNumber = await ensureOrderNumber(admin, order);
 
+  await qualifyReferral(admin, order.customer_id, orderNumber);
+
+  // Legacy: keep historical invoice rows in step if one already exists. No new invoices are created.
   const { data: invoice } = await admin
     .from("invoices")
     .select("id")
     .eq("order_id", order.id)
     .maybeSingle();
 
-  await qualifyReferral(admin, order.customer_id, invoiceSync.orderNumber || order.order_number);
-
   if (invoice?.id) {
     await admin
       .from("invoices")
-      .update({
-        payment_method: provider,
-        paid_at: now,
-      })
+      .update({ payment_method: provider, paid_at: now })
       .eq("id", invoice.id);
 
     await admin
@@ -517,8 +317,8 @@ Deno.serve(async (req: Request) => {
     currency,
     status: "paid",
     provider,
-    orderNumber: invoiceSync.orderNumber || order.order_number || null,
-    invoicePdfReady: invoiceSync.success,
-    invoiceSyncError: invoiceSync.success ? null : invoiceSync.error,
+    orderNumber,
+    invoicePdfReady: false,
+    invoiceSyncError: null,
   });
 });
