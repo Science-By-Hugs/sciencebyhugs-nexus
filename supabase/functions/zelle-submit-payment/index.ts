@@ -1,6 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
+// Google exit (2026-10-27): new checkout orders no longer get a Google invoice row,
+// so Zelle submission no longer requires one. Legacy invoice-based orders keep
+// their original rules. Base: deployed version 11.
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://nexus.sciencebyhugs.com",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -35,7 +39,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(
     supabaseUrl,
-    secretKeys.default,
+    secretKeys.nexus_rotation_20261023,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
@@ -77,10 +81,15 @@ Deno.serve(async (req: Request) => {
     .eq("order_id", order.id)
     .maybeSingle();
 
-  const directCheckout = invoice?.status === "direct_checkout";
-
-  if (!directCheckout && (!invoice || invoice.send_status !== "sent")) {
-    return json({ error: "Invoice must be sent before Zelle pay-later submission" }, 409);
+  if (invoice) {
+    // Legacy invoice-based orders: unchanged rule.
+    const directCheckout = invoice.status === "direct_checkout";
+    if (!directCheckout && invoice.send_status !== "sent") {
+      return json({ error: "Invoice must be sent before Zelle pay-later submission" }, 409);
+    }
+  } else if (order.status !== "checkout_pending") {
+    // New receipt-era orders: only an order created by checkout can take a Zelle submission.
+    return json({ error: "This order is not awaiting a Zelle payment" }, 409);
   }
 
   if (order.payment_status === "paid") {
@@ -136,27 +145,30 @@ Deno.serve(async (req: Request) => {
     })
     .eq("id", order.id);
 
-  await admin
-    .from("invoices")
-    .update({ payment_method: "Zelle" })
-    .eq("id", invoice.id);
+  if (invoice?.id) {
+    await admin
+      .from("invoices")
+      .update({ payment_method: "Zelle" })
+      .eq("id", invoice.id);
 
-  await admin
-    .from("invoice_events")
-    .insert({
-      invoice_id: invoice.id,
-      event_type: "zelle_payment_submitted",
-      description: "Customer reported Zelle payment sent through Nexus.",
-      metadata: {
-        source: "nexus_zelle",
-        submittedBy: user.id,
-        hasConfirmation: Boolean(confirmation),
-      },
-    });
+    await admin
+      .from("invoice_events")
+      .insert({
+        invoice_id: invoice.id,
+        event_type: "zelle_payment_submitted",
+        description: "Customer reported Zelle payment sent through Nexus.",
+        metadata: {
+          source: "nexus_zelle",
+          submittedBy: user.id,
+          hasConfirmation: Boolean(confirmation),
+        },
+      });
+  }
 
   return json({
     success: true,
     orderId: order.id,
+    orderNumber: order.order_number || null,
     payment,
   });
 });
