@@ -1992,7 +1992,9 @@ const receiptDateTime = (value: string | null | undefined) =>
     : '—'
 
 function closeReceipt() {
-  document.querySelector('.receipt-overlay')?.remove()
+  const receipt = document.querySelector<HTMLDialogElement>('dialog.receipt-overlay')
+  if (receipt?.open) receipt.close()
+  receipt?.remove()
   document.body.classList.remove('receipt-open')
 }
 
@@ -2005,10 +2007,10 @@ function openReceipt(order: NexusOrderHistory) {
   const row = (label: string, value: string, className = '') =>
     `<div class="receipt-row ${className}"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`
 
-  const overlay = document.createElement('div')
+  // A modal <dialog> opens in the browser's top layer, so the receipt stacks above
+  // the already-open account dialog instead of rendering behind it.
+  const overlay = document.createElement('dialog')
   overlay.className = 'receipt-overlay'
-  overlay.setAttribute('role', 'dialog')
-  overlay.setAttribute('aria-modal', 'true')
   overlay.setAttribute('aria-label', 'Receipt ' + number)
   overlay.innerHTML = `
     <article class="receipt-sheet">
@@ -2070,14 +2072,15 @@ function openReceipt(order: NexusOrderHistory) {
   })
   overlay.querySelector<HTMLButtonElement>('.receipt-close')?.addEventListener('click', closeReceipt)
   overlay.querySelector<HTMLButtonElement>('.receipt-print')?.addEventListener('click', () => window.print())
+  overlay.addEventListener('close', () => {
+    overlay.remove()
+    document.body.classList.remove('receipt-open')
+  })
   document.body.appendChild(overlay)
   document.body.classList.add('receipt-open')
+  overlay.showModal()
   overlay.querySelector<HTMLButtonElement>('.receipt-print')?.focus()
 }
-
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && document.querySelector('.receipt-overlay')) closeReceipt()
-})
 
 function renderAccountHistory() {
   if (!currentProfile) {
