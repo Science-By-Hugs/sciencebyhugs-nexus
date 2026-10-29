@@ -3,6 +3,12 @@ import { avatarMarkup, avatarPanel, bindAvatars } from './avatar'
 import { pushPanel, pushPrompt, bindPushPanel, disablePush } from './push'
 import './styles.css'
 import './brand.css'
+import './slate.css'
+import './ios.css'
+import './storefront.css'
+import { showLaunchLoader } from './launchLoader'
+import { icon } from './icons'
+import { bindSheetHeaders } from './dialogNavigation'
 import { registerSW } from 'virtual:pwa-register'
 import { fetchCatalog, type CatalogProduct } from './services/catalog'
 import {
@@ -56,6 +62,7 @@ registerSW({
 })
 
 const app = document.querySelector<HTMLDivElement>('#app')
+showLaunchLoader()
 if (!app) throw new Error('App root not found')
 
 let products: CatalogProduct[] = []
@@ -138,7 +145,7 @@ app.innerHTML = `
   <section id="entryGate" class="entry-gate" aria-labelledby="entryGateTitle" style="--entry-vial:url('${defaultProductImageUrl}')" ${hasValidEntryAcknowledgment() ? 'hidden' : ''}>
     <div class="entry-gate-backdrop" aria-hidden="true"></div>
     <div class="entry-gate-card">
-      <img class="entry-gate-logo" src="${nexusLogoUrl}" alt="Nexus — Science By Hugs" />
+      <img class="entry-brand-symbol" src="${import.meta.env.BASE_URL}brand/nexus-n-dot.svg" alt="NEXUS" width="56" height="56" />
       <div class="entry-gate-atom" aria-hidden="true">⚛</div>
       <span class="entry-gate-kicker">RESEARCH ACCESS CONFIRMATION</span>
       <h1 id="entryGateTitle">Before entering <em>Nexus.</em></h1>
@@ -190,14 +197,14 @@ app.innerHTML = `
 
   <header class="topbar">
     <a class="brand" href="#" aria-label="Science By Hugs Nexus home">
-      <img class="nexus-header-logo" src="${nexusLogoUrl}" alt="Nexus — Science By Hugs" />
+      <span class="minimal-wordmark">NEXUS<span>by Science By Hugs</span></span>
     </a>
 
     <div class="top-actions">
       <span class="system-status"><i></i> CATALOG LIVE</span>
-      <button id="menuButton" class="account-button menu-button" type="button">${avatarMarkup()}<span>Menu</span></button>
-      <button id="cartButton" class="cart-button" type="button">
-        Cart <span id="cartCount">0</span>
+      <button id="menuButton" class="account-button menu-button" type="button" aria-label="Open menu">${avatarMarkup()}<span>Menu</span>${icon('menu')}</button>
+      <button id="cartButton" class="cart-button" type="button" aria-label="Open cart">
+        ${icon('cart')}<span class="cart-label">Cart</span><span id="cartCount">0</span>
       </button>
       <button id="accountButton" class="account-button" type="button">Account</button>
     </div>
@@ -206,16 +213,16 @@ app.innerHTML = `
   ${pushPrompt()}
   <main class="shell">
     <section class="hero">
-      <div class="eyebrow">SCIENCE • RESEARCH • DISCOVERY</div>
-      <h1>Enter the <em>Nexus.</em></h1>
-      <p>Explore the live Science By Hugs catalog, powered by our continuously synced research database.</p>
+      <div class="eyebrow">SCIENCE BY HUGS</div>
+      <h1>Research catalog</h1>
+      <p>Your research, connected.</p>
     </section>
 
     <section class="catalog-shell">
       <div class="toolbar">
         <label class="search">
-          <span>⌕</span>
-          <input id="searchInput" type="search" placeholder="Search the catalog…" autocomplete="off" />
+          <span>${icon('search')}</span>
+          <input id="searchInput" aria-label="Search products" type="search" placeholder="Search products" autocomplete="off" />
         </label>
         <div id="categoryChips" class="chips" aria-label="Catalog categories"></div>
       </div>
@@ -236,19 +243,19 @@ app.innerHTML = `
 
   <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
     <button id="mobileHomeButton" class="mobile-nav-item active" type="button">
-      <span class="mobile-nav-icon">⌂</span>
+      <span class="mobile-nav-icon">${icon('home')}</span>
       <span>Home</span>
     </button>
     <button id="mobileAccountButton" class="mobile-nav-item" type="button">
-      <span class="mobile-nav-icon">◉</span>
+      <span class="mobile-nav-icon">${icon('account')}</span>
       <span>Account</span>
     </button>
     <button id="mobileSupportButton" class="mobile-nav-item" type="button">
-      <span class="mobile-nav-icon">?</span>
+      <span class="mobile-nav-icon">${icon('support')}</span>
       <span>Support</span>
     </button>
     <button id="mobileCartButton" class="mobile-nav-item" type="button">
-      <span class="mobile-nav-icon">◇</span>
+      <span class="mobile-nav-icon">${icon('cart')}</span>
       <span>Cart</span>
       <b id="mobileCartCount">0</b>
     </button>
@@ -731,6 +738,7 @@ app.innerHTML = `
     </div>
   </dialog>
 `
+bindSheetHeaders()
 
 const discountCodeInput = document.querySelector<HTMLInputElement>('#discountCode')!
 const applyDiscountCodeButton = document.querySelector<HTMLButtonElement>('#applyDiscountCodeButton')!

@@ -1,0 +1,145 @@
+/* NEXUS iOS presentation layer.
+   Loaded after slate.css. Paint, spacing and shape only: no flow, auth, checkout or
+   data behavior changes. Matches the approved "Nexus on iPhone" design canvas:
+   large titles, grouped inset lists, a product bottom sheet and a calm tab bar. */
+:root {
+  --ios-ground: #1B1E20;
+  --ios-hairline: #4A5155;
+  --ios-tab-inactive: #8C9496;
+  --ios-radius-group: 12px;
+  --ios-radius-card: 14px;
+  --ios-radius-action: 14px;
+}
+
+/* Shared actions: capsule-like iOS buttons */
+:is(.auth-primary,.request-invoice-button,.entry-gate-enter) {min-height:50px;border-radius:var(--ios-radius-action);font-size:17px;font-weight:600}
+:is(.auth-secondary,.subpage-back-button) {border-radius:var(--ios-radius-action);border-color:transparent;background:var(--surface)}
+.toast {border-radius:var(--ios-radius-action);font-weight:550}
+
+@media (max-width:600px) {
+  html,body {background:var(--ios-ground)}
+
+  /* Navigation bar: wordmark left, round icon buttons right */
+  .topbar {min-height:56px;padding:8px 16px;background:var(--ios-ground)}
+  .minimal-wordmark {font-size:17px;letter-spacing:.04em;font-weight:600}
+  .minimal-wordmark>span {margin-top:4px;font-size:10px;letter-spacing:.06em}
+  .top-actions {gap:8px}
+  .top-actions button {position:relative;width:36px;height:36px;min-width:36px;min-height:36px;padding:0;border:0;border-radius:18px;background:var(--surface)}
+  .top-actions svg {width:18px;height:18px}
+  #cartCount {position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;font-size:11px;font-weight:700;line-height:17px;box-shadow:0 0 0 2px var(--ios-ground)}
+
+  /* Home */
+  .shell {width:calc(100% - 32px);padding:16px 0 calc(110px + env(safe-area-inset-bottom))}
+  .home-intro {margin-bottom:12px}
+  .home-intro h1,.hero h1 {font-size:34px;line-height:41px;font-weight:700;letter-spacing:.01em;margin:0}
+  .home-intro p {font-size:15px;line-height:20px;margin-top:2px}
+  .home-search {display:flex;align-items:center;gap:6px;width:100%;min-height:36px;height:36px;margin:0 0 20px;padding:0 10px;border:0;border-radius:10px;background:var(--surface);color:var(--muted);font-size:17px;font-weight:400;text-align:left}
+  .home-search svg {width:16px;height:16px;flex:none}
+  .home-signin {min-height:52px;margin:0 0 12px;padding:0 16px;border-radius:var(--ios-radius-group);background:var(--surface);font-size:17px;font-weight:400}
+  .latest-order {width:100%;min-height:0;gap:12px;padding:14px 16px;border-radius:var(--ios-radius-card)}
+  .latest-order-copy {gap:2px}
+  .latest-order-copy small {font-size:13px;line-height:18px}
+  .latest-order-copy strong {font-size:17px;line-height:22px;font-weight:600}
+  .latest-order-copy>span {font-size:13px;line-height:18px}
+  .latest-order .text-action {min-height:44px;font-size:0;gap:0;color:var(--muted)}
+  .latest-order .text-action svg {width:14px;height:14px}
+  .home-section-heading {margin:28px 0 12px}
+  .home-section-heading h2 {font-size:22px;line-height:28px;font-weight:700;letter-spacing:0}
+  .home-section-heading .text-action {font-size:15px;color:var(--muted);min-height:44px}
+  .home-section-heading .text-action svg {display:none}
+  .home-product-card {grid-template-columns:112px minmax(0,1fr);min-height:140px;border-radius:var(--ios-radius-card)}
+  .home-product-image {min-height:140px;max-height:none;margin:0}
+  .home-product-image img {max-height:160px}
+  .home-product-copy {padding:14px 16px;gap:4px;justify-content:center}
+  .home-product-copy>small {font-size:12px}
+  .home-product-copy>strong {font-size:17px;line-height:22px;font-weight:600}
+  .home-product-price {font-size:15px;color:var(--muted)}
+  .home-product-link {display:none}
+  .state,.catalog-empty {border-radius:var(--ios-radius-card);min-height:220px}
+
+  /* Catalog */
+  .hero {padding:0 0 12px}
+  .hero .eyebrow {display:none}
+  .toolbar {gap:12px}
+  .search {height:36px;padding:0 10px;gap:6px;border:0;border-radius:10px}
+  .search svg {width:16px;height:16px}
+  .search input {font-size:17px}
+  .chips {gap:6px;padding:0 0 4px}
+  .chip {min-height:32px;padding:0 14px;border:0;border-radius:16px;background:var(--surface);font-size:14px;font-weight:600}
+  .chip.active {text-decoration:none}
+  .section-heading {margin:20px 0 12px}
+  .grid {gap:12px}
+  .product-card {border-radius:var(--ios-radius-card)}
+  .product-image {border-radius:var(--ios-radius-card) var(--ios-radius-card) 0 0}
+  .product-body {padding:12px}
+  .product-body h3 {font-size:15px;line-height:20px;font-weight:600;margin:4px 0 0}
+  .product-detail-link {min-height:44px}
+  .product-footer {padding-top:8px;gap:2px}
+  .product-footer strong {font-size:15px;font-weight:600}
+  .add-cart-button {margin-top:10px;min-height:40px;border-radius:10px;font-size:14px;font-weight:600}
+  .catalog-footnote {margin:20px 4px}
+
+  /* Product: a bottom sheet with a grabber, not a full page */
+  dialog.product-dialog {top:auto;bottom:0;height:calc(var(--visible-height,100dvh) - var(--app-safe-top,0px) - 10px);max-height:calc(var(--visible-height,100dvh) - var(--app-safe-top,0px) - 10px);border:0;border-radius:12px 12px 0 0;background:var(--ios-ground);padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+  dialog.product-dialog::backdrop {background:#0c0d0ee6}
+  .product-dialog .sheet-topbar {position:sticky;top:0;margin:0 -16px 8px;padding:18px 16px 8px;background:var(--ios-ground);border:0;justify-content:flex-end}
+  .product-dialog .sheet-topbar::before {content:"";position:absolute;top:6px;left:50%;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:var(--ios-hairline)}
+  .product-dialog .sheet-topbar>strong {display:none}
+  .product-dialog .dialog-close {position:relative;top:0;right:0;width:30px;height:30px;min-width:30px;min-height:30px;border:0;border-radius:15px;background:var(--surface);color:var(--muted);font-size:20px;line-height:1}
+  .product-dialog .dialog-close::after {content:"";position:absolute;inset:-9px}
+  .product-dialog .dialog-image {height:250px;border-radius:18px;background:var(--surface);margin:0 0 20px}
+  .product-dialog .category {display:block;font-size:13px;font-weight:600;letter-spacing:.06em}
+  .product-dialog h2 {font-size:24px;line-height:30px;font-weight:700;letter-spacing:0;margin:2px 0 4px}
+  .product-dialog .dialog-price {font-size:20px;line-height:26px;font-weight:600}
+  .product-dialog .type {margin:4px 0 0;color:var(--muted)}
+  .product-dialog .dialog-description {margin:16px 0 0;padding:14px 16px;border-radius:var(--ios-radius-group);background:var(--surface);color:var(--muted);font-size:15px;line-height:21px}
+  .product-dialog .research-notice {margin:8px 0 0;padding:0 16px;background:transparent;border:0;color:var(--muted);font-size:13px;line-height:18px}
+  .product-dialog #dialogAddToCart {position:sticky;bottom:0;width:100%;margin-top:20px;box-shadow:0 -12px 0 var(--ios-ground)}
+
+  /* Sheets that stay full screen get large titles and grouped content */
+  :is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog) {background:var(--ios-ground);padding:0 16px calc(24px + env(safe-area-inset-bottom))}
+  :is(.cart-dialog,.account-dialog,.menu-dialog) .sheet-topbar {margin:0 -16px 4px;padding-left:16px;padding-right:16px;background:var(--ios-ground);border-bottom:0.5px solid #303639}
+  .sheet-topbar>strong {font-size:17px;font-weight:600}
+  .sheet-topbar .dialog-close {position:relative;top:0;right:0;width:30px;height:30px;min-width:30px;min-height:30px;border:0;border-radius:15px;background:var(--surface);color:var(--muted);font-size:20px}
+  .sheet-topbar .dialog-close::after {content:"";position:absolute;inset:-9px}
+  .cart-heading .eyebrow,.cart-heading p {display:none}
+  :is(.cart-heading h2,.menu-head h2) {font-size:34px;line-height:41px;font-weight:700;letter-spacing:.01em;margin:8px 0 16px}
+
+  /* Cart: one grouped list of items, then a grouped summary */
+  .cart-items {display:flex;flex-direction:column;gap:0;border-radius:var(--ios-radius-group);overflow:hidden;background:var(--surface)}
+  .cart-row {grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:12px 16px;border-radius:0;background:transparent;border-bottom:0.5px solid var(--ios-hairline)}
+  .cart-row:last-child {border-bottom:0}
+  .cart-copy {grid-column:1;display:flex;flex-direction:column;gap:2px}
+  .cart-copy strong {font-size:16px;line-height:21px;font-weight:600}
+  .cart-copy span {font-size:15px;color:var(--muted)}
+  .cart-remove {min-height:32px;padding:0;font-size:13px;align-self:flex-start}
+  .quantity-control {grid-column:2;grid-row:1;gap:0;border-radius:9px;background:var(--ios-ground);overflow:hidden}
+  .quantity-control button {min-width:44px;min-height:32px;height:32px;border:0;border-radius:0;background:transparent;font-size:18px}
+  .quantity-control b {min-width:20px;font-size:15px}
+  .line-total {grid-column:2;justify-self:end;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  .checkout-panel {border:0;border-radius:var(--ios-radius-group);padding:4px 16px;margin-top:24px}
+  .checkout-title {font-size:13px;line-height:18px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;margin:-28px -16px 10px;padding:0 16px}
+  .summary-row {min-height:44px;align-items:center;font-size:17px;border-bottom:0.5px solid var(--ios-hairline)}
+  .summary-row span {color:var(--text)}
+  .summary-row strong {font-weight:400;color:var(--muted)}
+  .summary-row.total-row {border-bottom:0}
+  .summary-row.total-row strong,.summary-row.total-row span {font-weight:600;color:var(--text)}
+  .server-note {padding:6px 0 12px;font-size:13px}
+  .checkout-field {font-size:13px}
+  :is(.checkout-field) :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {border:0;border-radius:10px;background:var(--ios-ground);min-height:44px}
+
+  /* Menu: grouped inset list */
+  .menu-grid {border-radius:var(--ios-radius-group);overflow:hidden;background:var(--surface)}
+  .menu-card {min-height:60px;padding:12px 16px;border-bottom:0.5px solid var(--ios-hairline)}
+  .menu-card:last-child {border-bottom:0}
+  .menu-card strong {font-size:17px;font-weight:400}
+  .menu-card small {font-size:13px;margin-top:2px}
+  .menu-head p {display:none}
+
+  /* Tab bar: no underline, filled emphasis on the active tab */
+  .mobile-bottom-nav {padding:6px 8px calc(2px + env(safe-area-inset-bottom));background:#171A1C;border-top:0.5px solid #303639}
+  .mobile-nav-item {min-height:49px;gap:2px;font-size:10px;font-weight:600;color:var(--ios-tab-inactive)}
+  .mobile-nav-item.active {color:var(--text);text-decoration:none}
+  .mobile-nav-icon svg {width:26px;height:26px;stroke-width:1.8}
+  .mobile-nav-item.active .mobile-nav-icon svg {stroke-width:2.4}
+}
