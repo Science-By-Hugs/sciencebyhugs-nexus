@@ -1,0 +1,13 @@
+/* Storefront adapters for the shared NEXUS Slate + iOS layers (slate.css, ios.css).
+   The website has no staging label or native viewport bridge, so supply those values here. */
+:root {--app-safe-top:env(safe-area-inset-top,0px)}
+.topbar {top:0}
+.brand .nexus-header-logo {display:none}
+.search span {font-size:0}
+.mobile-nav-item {position:relative}
+#mobileCartCount {position:absolute;top:4px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--text);color:var(--nexus-navigation);font-size:11px;font-weight:700;line-height:17px;text-align:center}
+@media (min-width:601px) {
+  .top-actions .menu-button svg {display:none}
+}
+.top-actions #menuButton > .profile-avatar {display:none}
+.entry-brand-symbol {display:block;margin-bottom:28px;border-radius:12px}

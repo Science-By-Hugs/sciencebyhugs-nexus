@@ -1,0 +1,72 @@
+/* "Opening Nexus" launch loader. Slate field, vial drop-in, one light sweep, fade to app. */
+.launch-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: var(--nexus-background, #222629);
+  color: var(--nexus-text, #F0F1EF);
+  opacity: 1;
+  transition: opacity 300ms ease, visibility 0s linear 300ms;
+}
+.launch-loader.is-leaving { opacity: 0; visibility: hidden; pointer-events: none }
+
+.launch-loader-stage {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 94px;
+  height: 198px;
+  margin-left: -47px;
+}
+.launch-loader-vial {
+  display: block;
+  opacity: 0;
+  transform-origin: 50% 85%;
+  animation: launchDrop 550ms cubic-bezier(.2,.9,.3,1.15) 100ms forwards;
+}
+@keyframes launchDrop {
+  0% { opacity: 0; transform: translateY(-22px) rotate(-14deg) }
+  45% { opacity: 1 }
+  75% { transform: translateY(0) rotate(2deg) }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg) }
+}
+.launch-loader-sheen { transform: translateX(-140px); animation: launchSheen 800ms cubic-bezier(.4,0,.2,1) 550ms forwards }
+@keyframes launchSheen { to { transform: translateX(140px) } }
+
+.launch-loader-mark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(34% + 252px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  opacity: 0;
+  animation: launchFade 350ms ease 300ms forwards;
+}
+.launch-loader-symbol { border-radius: 10px }
+.launch-loader-mark span { font-size: 13px; letter-spacing: .2px; color: var(--nexus-muted, #A8B0B2) }
+@keyframes launchFade { to { opacity: 1 } }
+
+.launch-loader-skip {
+  position: absolute;
+  right: 14px;
+  bottom: calc(40px + env(safe-area-inset-bottom));
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  color: var(--nexus-muted, #A8B0B2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.launch-loader-skip:focus-visible { outline: 2px solid var(--nexus-text, #F0F1EF); outline-offset: 2px; border-radius: 8px }
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-loader { transition: none }
+  .launch-loader-vial, .launch-loader-mark { animation: none !important; opacity: 1 }
+  .launch-loader-sheen { display: none }
+}
