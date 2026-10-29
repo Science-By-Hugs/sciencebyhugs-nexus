@@ -56,3 +56,11 @@
 dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog,.policy-dialog,.referral-dialog,.product-dialog) {background:var(--bg)!important;border-color:var(--line)}
 dialog::backdrop {background:#171a1ccc!important;backdrop-filter:none!important}
 .sheet-topbar,.subpage-header,.policy-dialog-header,.referral-dialog-header {background:var(--bg)!important}
+
+/* Receipt sheet is white paper: use Slate on porcelain so its actions stay readable. */
+.receipt-actions :is(.receipt-print,.receipt-close) {min-height:48px;border-radius:12px;font-size:15px;font-weight:600}
+.receipt-actions .receipt-print {background:#171A1C!important;color:#F0F1EF!important;border:1px solid #171A1C!important}
+.receipt-actions .receipt-print:hover {background:#303639!important;border-color:#303639!important}
+.receipt-actions .receipt-close {background:#FFFFFF!important;color:#171A1C!important;border:1px solid #171A1C!important}
+.receipt-actions .receipt-close:hover {background:#F0F1EF!important}
+.receipt-actions :is(.receipt-print,.receipt-close):focus-visible {outline:2px solid #171A1C!important;outline-offset:3px}
