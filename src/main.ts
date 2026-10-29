@@ -86,7 +86,7 @@ if (incomingReferralCode) {
 }
 
 const nexusLogoUrl = `${import.meta.env.BASE_URL}brand/nexus.svg`
-const defaultProductImageUrl = `${import.meta.env.BASE_URL}default-product-vial-photo.webp?v=2`
+const defaultProductImageUrl = `${import.meta.env.BASE_URL}default-product-vial-slate.webp?v=1`
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -292,7 +292,7 @@ app.innerHTML = `
 
   <dialog id="supportDialog" class="support-dialog">
     <div class="subpage-header">
-      <button id="backSupportToMenu" class="subpage-back-button" type="button">← Back to Menu</button>
+      <button id="backSupportToMenu" class="subpage-back-button" type="button">← Menu</button>
       <button id="closeSupportDialog" class="referral-close-button" aria-label="Close">×</button>
     </div>
     <div class="support-page">
@@ -335,7 +335,7 @@ app.innerHTML = `
   <dialog id="policyDialog" class="policy-dialog">
     <div class="policy-dialog-header">
       <div class="subpage-header-main">
-        <button id="backPolicyToMenu" class="subpage-back-button" type="button">← Back to Menu</button>
+        <button id="backPolicyToMenu" class="subpage-back-button" type="button">← Menu</button>
         <div>
           <span class="eyebrow">POLICY LIBRARY</span>
           <strong>Science By Hugs Policies</strong>
@@ -365,7 +365,7 @@ app.innerHTML = `
   <dialog id="referralDialog" class="referral-dialog">
     <div class="referral-dialog-header">
       <div class="subpage-header-main">
-        <button id="backReferralToMenu" class="subpage-back-button" type="button">← Back to Menu</button>
+        <button id="backReferralToMenu" class="subpage-back-button" type="button">← Menu</button>
         <div>
           <span class="eyebrow">REFERRAL LAB</span>
           <strong>Refer a Friend</strong>
