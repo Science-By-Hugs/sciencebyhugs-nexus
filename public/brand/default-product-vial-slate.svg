@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500">
+  <defs>
+    <radialGradient id="key" cx="0.42" cy="0.36" r="0.62">
+      <stop offset="0" stop-color="#3A4145"/>
+      <stop offset="0.55" stop-color="#2A2F32"/>
+      <stop offset="1" stop-color="#1E2224"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#222629" stop-opacity="0"/>
+      <stop offset="1" stop-color="#171A1C" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#0C0D0E" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#0C0D0E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5F676A"/><stop offset="0.18" stop-color="#9AA2A4"/>
+      <stop offset="0.32" stop-color="#E3E6E6"/><stop offset="0.46" stop-color="#B4BBBD"/>
+      <stop offset="0.7" stop-color="#858D90"/><stop offset="0.88" stop-color="#C2C7C8"/>
+      <stop offset="1" stop-color="#5A6265"/>
+    </linearGradient>
+    <linearGradient id="capTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0F1EF" stop-opacity="0.55"/><stop offset="1" stop-color="#F0F1EF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F0F1EF" stop-opacity="0.16"/>
+      <stop offset="0.12" stop-color="#F0F1EF" stop-opacity="0.05"/>
+      <stop offset="0.5" stop-color="#F0F1EF" stop-opacity="0.02"/>
+      <stop offset="0.86" stop-color="#F0F1EF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#F0F1EF" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="streak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0F1EF" stop-opacity="0"/>
+      <stop offset="0.15" stop-color="#F0F1EF" stop-opacity="0.55"/>
+      <stop offset="0.85" stop-color="#F0F1EF" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#F0F1EF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0F1EF" stop-opacity="0.04"/><stop offset="1" stop-color="#F0F1EF" stop-opacity="0.2"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="blur18"><feGaussianBlur stdDeviation="18"/></filter>
+    <clipPath id="body"><path d="M482 400V432C482 470 385 488 385 572V1182C385 1240 418 1270 472 1270H728C782 1270 815 1240 815 1182V572C815 488 718 470 718 432V400Z"/></clipPath>
+  </defs>
+
+  <rect width="1200" height="1500" fill="url(#key)"/>
+  <rect y="1050" width="1200" height="450" fill="url(#floor)"/>
+  <ellipse cx="600" cy="1282" rx="280" ry="32" fill="url(#shadow)"/>
+  <ellipse cx="600" cy="1276" rx="210" ry="13" fill="#0C0D0E" opacity="0.55" filter="url(#soft)"/>
+
+  <!-- glass body -->
+  <path d="M482 400V432C482 470 385 488 385 572V1182C385 1240 418 1270 472 1270H728C782 1270 815 1240 815 1182V572C815 488 718 470 718 432V400Z" fill="url(#glass)" stroke="#F0F1EF" stroke-opacity="0.5" stroke-width="5"/>
+  <g clip-path="url(#body)">
+    <path d="M400 584C400 520 462 498 494 482V420" fill="none" stroke="#F0F1EF" stroke-opacity="0.12" stroke-width="10"/>
+    <rect x="410" y="610" width="30" height="580" rx="15" fill="url(#streak)"/>
+    <rect x="452" y="640" width="10" height="520" rx="5" fill="url(#streak)" opacity="0.45"/>
+    <rect x="770" y="640" width="18" height="520" rx="9" fill="url(#streak)" opacity="0.5"/>
+    <path d="M385 1205H815V1270H385Z" fill="url(#base)"/>
+    <ellipse cx="600" cy="1212" rx="205" ry="18" fill="none" stroke="#F0F1EF" stroke-opacity="0.28" stroke-width="4"/>
+    <ellipse cx="600" cy="1240" rx="160" ry="10" fill="#F0F1EF" opacity="0.08" filter="url(#soft)"/>
+  </g>
+  <path d="M400 1180V586" stroke="#F0F1EF" stroke-opacity="0.18" stroke-width="3"/>
+  <path d="M800 1180V586" stroke="#F0F1EF" stroke-opacity="0.12" stroke-width="3"/>
+
+  <!-- neck lip and aluminum crimp cap -->
+  <rect x="466" y="372" width="268" height="40" rx="10" fill="#F0F1EF" fill-opacity="0.1" stroke="#F0F1EF" stroke-opacity="0.4" stroke-width="4"/>
+  <rect x="452" y="232" width="296" height="130" rx="22" fill="url(#cap)"/>
+  <rect x="452" y="232" width="296" height="38" rx="20" fill="url(#capTop)"/>
+  <rect x="462" y="340" width="276" height="52" rx="10" fill="url(#cap)" opacity="0.92"/>
+  <path d="M466 342H734" stroke="#171A1C" stroke-opacity="0.45" stroke-width="4"/>
+  <path d="M466 388H734" stroke="#171A1C" stroke-opacity="0.3" stroke-width="3"/>
+  <g stroke="#171A1C" stroke-opacity="0.12" stroke-width="2">
+    <path d="M498 236V358M542 236V358M658 236V358M702 236V358"/>
+  </g>
+  <ellipse cx="555" cy="250" rx="66" ry="8" fill="#F0F1EF" opacity="0.35" filter="url(#soft)"/>
+
+  <!-- quiet rim light -->
+  <path d="M815 600V1170" stroke="#F0F1EF" stroke-opacity="0.22" stroke-width="10" filter="url(#blur18)"/>
+</svg>

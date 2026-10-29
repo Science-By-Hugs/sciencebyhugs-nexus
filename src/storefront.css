@@ -11,3 +11,48 @@
 }
 .top-actions #menuButton > .profile-avatar {display:none}
 .entry-brand-symbol {display:block;margin-bottom:28px;border-radius:12px}
+/* Slate default product photo: a 4:5 render that already carries its own Slate ground. */
+:is(.product-image,.dialog-image)>.default-product-image {object-fit:cover;padding:0;background:#1E2224}
+
+/* Theme sweep: retire the legacy cyan, blue, pink and green accents everywhere. */
+:is(.auth-brand-panel,.auth-form-heading,.account-welcome) em,.auth-status-pill,.auth-status-pill i,.create-account-icon,
+.account-hub-card b,.account-hub-icon,.account-hub-signout :is(.account-hub-icon,b),.policy-kicker,.policy-chevron,
+.account-manage-form legend,.account-manage-form a,.policy-content a,.auth-switch b,.auth-form b {color:var(--text)!important;text-shadow:none!important}
+:is(.auth-status-pill,.create-account-icon,.discount-code-badge,.profile-avatar,.account-manage-form,.policy-content,.entry-policy-copy) {border-color:var(--line)!important}
+.auth-status-pill {background:var(--surface)!important}
+.auth-status-pill i,.account-identity-strip i,.account-welcome i {background:var(--muted)!important;box-shadow:none!important}
+.account-hub-icon {background:var(--surface)!important;color:var(--muted)!important}
+.account-manage-form {background:var(--surface)!important}
+.profile-avatar {background:var(--muted)!important;color:var(--nexus-navigation)!important;box-shadow:none!important}
+:is(.policy-content,.entry-policy-copy pre,.label,.policy-check,.summary-row,.summary-row span,#cartDiscountLabel,.discount-code-message,.discount-code-badge) {color:var(--muted)}
+.summary-row.total-row,.summary-row.total-row :is(span,strong) {color:var(--text)!important}
+.policy-check {color:var(--text)}
+.referral-dialog,.referral-dialog-content,.policy-dialog,.support-dialog {background:var(--bg)!important}
+
+/* Readable minimum: no label below 11px. */
+:is(.auth-status-pill,.discount-code-badge,.policy-kicker,.eyebrow,.support-action-card span) {font-size:11px!important;letter-spacing:.06em}
+.minimal-wordmark>span {font-size:10px}
+
+/* Sub-page headers (Support, Policies, Referrals) match the sheet headers. */
+:is(.subpage-header,.policy-dialog-header,.referral-dialog-header) {align-items:center}
+.subpage-header-main {min-width:0}
+.subpage-header-main>div {min-width:0}
+.subpage-header-main strong {overflow-wrap:anywhere}
+.subpage-back-button {min-height:44px!important;padding:0 8px 0 4px!important;border:0!important;background:transparent!important;color:var(--text)!important;font-size:17px!important;font-weight:400!important}
+.referral-close-button {width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;border:0!important;border-radius:15px!important;background:var(--surface)!important;color:var(--muted)!important;font-size:20px!important;position:relative}
+.referral-close-button::after {content:"";position:absolute;inset:-9px}
+
+@media (max-width:600px) {
+  /* Full-screen sheets on phones (the product sheet keeps its bottom-sheet shape from ios.css). */
+  dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog,.policy-dialog,.referral-dialog) {position:fixed;inset:0;margin:0;width:100%;max-width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0}
+  .policy-dialog-header .eyebrow,.referral-dialog-header .eyebrow {display:none}
+  :is(.policy-dialog-header,.referral-dialog-header)>.subpage-header-main strong,:is(.policy-dialog-header,.referral-dialog-header) .subpage-header-main strong {font-size:17px;line-height:22px}
+}
+:is(.marketing-consent legend,.marketing-consent a,.policy-legal-contact a) {color:var(--text)!important;text-decoration:underline;text-underline-offset:3px}
+:is(.policy-dialog-header,.referral-dialog-header) {display:flex!important;justify-content:space-between;gap:12px}
+.subpage-header-main {display:flex;align-items:center;gap:8px;flex:1}
+.policy-content {max-height:none!important;overflow:visible!important}
+/* Every sheet sits on the Slate ground at every width (legacy navy retired). */
+dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog,.policy-dialog,.referral-dialog,.product-dialog) {background:var(--bg)!important;border-color:var(--line)}
+dialog::backdrop {background:#171a1ccc!important;backdrop-filter:none!important}
+.sheet-topbar,.subpage-header,.policy-dialog-header,.referral-dialog-header {background:var(--bg)!important}
