@@ -85,8 +85,51 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 import AuthenticationServices
 
 class NexusBridgeViewController: CAPBridgeViewController {
+    private let safeAreaPlugin = NexusSafeAreaPlugin()
+
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(NexusAppleSignInPlugin())
+        bridge?.registerPluginInstance(safeAreaPlugin)
+    }
+
+    // With contentInset = never the WebView spans the whole screen, so the
+    // view controller's safe area is the authoritative inset for the page.
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        safeAreaPlugin.publish(view.safeAreaInsets)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        safeAreaPlugin.publish(view.safeAreaInsets)
+    }
+}
+
+/// Reports the real device safe-area insets (status bar, notch, Dynamic Island,
+/// Home indicator, landscape sensor housing) to the web layer. CSS env() values
+/// can read 0 on a cold WKWebView launch, which previously forced a fixed 48px guess.
+@objc(NexusSafeAreaPlugin)
+public class NexusSafeAreaPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NexusSafeAreaPlugin"
+    public let jsName = "NexusSafeArea"
+    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "get", returnType: CAPPluginReturnPromise)]
+    private var lastPublished: UIEdgeInsets?
+
+    @objc func get(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let insets = self.bridge?.viewController?.view.safeAreaInsets ?? .zero
+            call.resolve(Self.payload(insets))
+        }
+    }
+
+    func publish(_ insets: UIEdgeInsets) {
+        guard insets != lastPublished else { return }
+        lastPublished = insets
+        notifyListeners("change", data: Self.payload(insets))
+    }
+
+    private static func payload(_ insets: UIEdgeInsets) -> [String: Any] {
+        ["top": Double(insets.top), "right": Double(insets.right), "bottom": Double(insets.bottom), "left": Double(insets.left)]
     }
 }
 

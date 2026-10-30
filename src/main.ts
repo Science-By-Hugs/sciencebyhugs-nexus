@@ -11,6 +11,7 @@ import { icon } from './icons'
 import { bindSheetHeaders } from './dialogNavigation'
 import { registerSW } from 'virtual:pwa-register'
 import { Capacitor } from '@capacitor/core'
+import { installNativeViewport } from './nativeViewport'
 import { fetchCatalog, type CatalogProduct } from './services/catalog'
 import { loadMyDiscountCodes } from './services/myDiscounts'
 import {
@@ -57,16 +58,9 @@ const isNativeApp = Capacitor.isNativePlatform()
 document.documentElement.classList.toggle('native-app', isNativeApp)
 document.body.classList.toggle('native-app', isNativeApp)
 
-// Keep bottom navigation out of the way of the native iPhone keyboard.
-// Scope this to the installed app; the web storefront retains its own layout.
-if (isNativeApp) {
-  const editingControl = (element: Element | null) =>
-    element?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,select,[contenteditable="true"]') ?? false
-  const syncEditingFocus = () =>
-    document.body.classList.toggle('keyboard-open', editingControl(document.activeElement))
-  document.addEventListener('focusin', syncEditingFocus)
-  document.addEventListener('focusout', () => requestAnimationFrame(syncEditingFocus))
-}
+// Native safe areas, keyboard-aware viewport height and tab-bar hiding.
+// Scoped to the installed app; the web storefront retains its own layout.
+if (isNativeApp) installNativeViewport()
 
 if (!isNativeApp) {
   registerSW({

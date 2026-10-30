@@ -178,11 +178,13 @@ body.native-app .topbar {
   body.native-app dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog,.policy-dialog,.referral-dialog) {
     box-sizing: border-box;
     position: fixed;
-    inset: 0;
+    inset: auto 0 auto 0;
+    /* Follow the visual viewport so the sheet sits above the keyboard. */
+    top: var(--visible-top, 0px);
     width: 100%;
     max-width: 100%;
-    height: 100dvh;
-    max-height: 100dvh;
+    height: var(--visible-height, 100dvh);
+    max-height: var(--visible-height, 100dvh);
     margin: 0;
     border: 0;
     border-radius: 0;
@@ -195,8 +197,8 @@ body.native-app .topbar {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scroll-padding-top: calc(var(--app-safe-top) + 64px);
-    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 32px);
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(var(--app-safe-bottom) + 32px);
+    padding-bottom: calc(24px + var(--app-safe-bottom));
   }
   body.native-app dialog:is(.cart-dialog,.account-dialog,.menu-dialog) > .dialog-close {
     position: sticky;
@@ -244,15 +246,15 @@ body.native-app .topbar {
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    padding-bottom: calc(28px + var(--app-safe-bottom));
   }
 
   /* The product bottom sheet begins below the safe top, but its direct close
      button still needs to remain visible during product-detail scrolling. */
   body.native-app dialog.product-dialog {
     box-sizing: border-box;
-    height: calc(100dvh - var(--app-safe-top) - 10px);
-    max-height: calc(100dvh - var(--app-safe-top) - 10px);
+    height: calc(var(--visible-height, 100dvh) - var(--app-safe-top) - 10px);
+    max-height: calc(var(--visible-height, 100dvh) - var(--app-safe-top) - 10px);
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -276,7 +278,7 @@ body.native-app .topbar {
 
   body.native-app .mobile-bottom-nav {
     box-sizing: border-box;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-bottom: max(8px, var(--app-safe-bottom));
   }
   body.native-app.keyboard-open .mobile-bottom-nav {
     display: none;
@@ -286,4 +288,32 @@ body.native-app .topbar {
   body.native-app :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
     font-size: 16px !important;
   }
+}
+
+/* Native landscape iPhone / iPad (wider than 600px): the sensor housing and
+   rounded corners sit on the left/right edges. Keep the wordmark, header
+   controls, page content and centered sheets clear of them. */
+@media (min-width: 601px) {
+  body.native-app .topbar {
+    padding-left: max(20px, calc((100vw - 1120px) / 2), calc(16px + var(--app-safe-left)));
+    padding-right: max(20px, calc((100vw - 1120px) / 2), calc(16px + var(--app-safe-right)));
+  }
+  body.native-app .shell {
+    width: min(1120px, calc(100% - 40px - var(--app-safe-left) - var(--app-safe-right)));
+    padding-bottom: calc(112px + var(--app-safe-bottom));
+  }
+  body.native-app dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog,.policy-dialog,.referral-dialog,.product-dialog)[open] {
+    max-height: calc(var(--visible-height, 100dvh) - 24px - var(--app-safe-top) - var(--app-safe-bottom));
+    max-width: calc(100vw - 32px - var(--app-safe-left) - var(--app-safe-right));
+  }
+}
+
+/* Native receipt overlay: full-screen and scrollable; keep the receipt's first
+   line and its Print/Close actions clear of the Dynamic Island and Home indicator. */
+body.native-app dialog.receipt-overlay {
+  top: var(--visible-top, 0px);
+  height: var(--visible-height, 100dvh);
+  padding: calc(16px + var(--app-safe-top)) calc(16px + var(--app-safe-right)) calc(24px + var(--app-safe-bottom)) calc(16px + var(--app-safe-left));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
