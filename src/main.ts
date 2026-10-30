@@ -11,6 +11,7 @@ import { icon } from './icons'
 import { bindSheetHeaders } from './dialogNavigation'
 import { registerSW } from 'virtual:pwa-register'
 import { fetchCatalog, type CatalogProduct } from './services/catalog'
+import { loadMyDiscountCodes } from './services/myDiscounts'
 import {
   claimExistingProfile,
   getCurrentUser,
@@ -636,6 +637,11 @@ app.innerHTML = `
           <span id="accountEmail" class="account-hidden-identity"></span>
         </div>
 
+        <section id="myDiscountCodes" class="my-discount-codes" aria-labelledby="myDiscountCodesTitle" hidden>
+          <h3 id="myDiscountCodesTitle">Your discount codes</h3>
+          <div id="myDiscountCodesList" class="my-discount-list"></div>
+        </section>
+
         <div class="account-hub-actions">
           <button id="manageAccountButton" class="account-hub-card" type="button">
             <span class="account-hub-icon">◎</span>
@@ -919,8 +925,54 @@ function renderAccountBenefits() {
   }).join('')
 }
 
+async function renderMyDiscountCodes() {
+  const section = document.querySelector<HTMLElement>('#myDiscountCodes')
+  const listEl = document.querySelector<HTMLElement>('#myDiscountCodesList')
+  if (!section || !listEl) return
+  if (!currentProfile) { section.hidden = true; return }
+  try {
+    const codes = await loadMyDiscountCodes()
+    section.hidden = codes.length === 0
+    listEl.innerHTML = codes.map(code => {
+      const details = [
+        code.one_time ? 'One-time use' : 'Use any time',
+        code.expires_at ? 'Expires ' + new Date(code.expires_at).toLocaleDateString() : '',
+      ].filter(Boolean).join(' · ')
+      return `<div class="my-discount-row">
+        <span><strong>${escapeHtml(code.code)}</strong><small>${escapeHtml(code.description)}</small><small>${escapeHtml(details)}</small></span>
+        <span class="my-discount-actions">
+          <button type="button" class="auth-secondary my-discount-copy" data-code="${escapeHtml(code.code)}" aria-label="Copy ${escapeHtml(code.code)}">Copy</button>
+          <button type="button" class="auth-primary my-discount-use" data-code="${escapeHtml(code.code)}">Use</button>
+        </span>
+      </div>`
+    }).join('')
+  } catch {
+    // The account page works without this section (for example before the backend is updated).
+    section.hidden = true
+  }
+}
+
+document.querySelector('#myDiscountCodesList')?.addEventListener('click', async event => {
+  const target = event.target as HTMLElement
+  const copyButton = target.closest<HTMLButtonElement>('.my-discount-copy')
+  if (copyButton?.dataset.code) {
+    try { await navigator.clipboard.writeText(copyButton.dataset.code); showToast('Copied ' + copyButton.dataset.code) }
+    catch { showToast('Your code is ' + copyButton.dataset.code) }
+    return
+  }
+  const useButton = target.closest<HTMLButtonElement>('.my-discount-use')
+  if (!useButton?.dataset.code) return
+  discountCodeInput.value = useButton.dataset.code
+  accountDialog.close()
+  setMobileNavActive('home')
+  openCartDialog()
+  if (cart.length) applyDiscountCodeButton.click()
+  else showToast('Code ready. Add products to your cart to use it.')
+})
+
 function showAccountHub() {
   void bindAvatars([currentProfile?.first_name, currentProfile?.last_name].filter(Boolean).join(' '), true)
+  void renderMyDiscountCodes()
   accountHubView.hidden = false
   accountManageView.hidden = true
   accountOrdersView.hidden = true
