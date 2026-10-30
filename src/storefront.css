@@ -64,3 +64,15 @@ dialog::backdrop {background:#171a1ccc!important;backdrop-filter:none!important}
 .receipt-actions .receipt-close {background:#FFFFFF!important;color:#171A1C!important;border:1px solid #171A1C!important}
 .receipt-actions .receipt-close:hover {background:#F0F1EF!important}
 .receipt-actions :is(.receipt-print,.receipt-close):focus-visible {outline:2px solid #171A1C!important;outline-offset:3px}
+
+/* Account: customer's assigned discount codes (2026-10-30) */
+.my-discount-codes{margin:20px 0 4px}
+.my-discount-codes h3{margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.my-discount-list{display:flex;flex-direction:column;border-radius:12px;background:var(--surface);overflow:hidden}
+.my-discount-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:0.5px solid #4A5155}
+.my-discount-row:last-child{border-bottom:0}
+.my-discount-row>span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.my-discount-row strong{font-size:16px;letter-spacing:.06em;color:var(--text)}
+.my-discount-row small{font-size:13px;line-height:18px;color:var(--muted);overflow-wrap:anywhere}
+.my-discount-actions{display:flex;gap:8px;flex:none}
+.my-discount-actions button{min-height:36px!important;padding:0 14px!important;font-size:14px!important;border-radius:10px!important}
