@@ -401,18 +401,18 @@ app.innerHTML = `
       <div id="cartItems" class="cart-items"></div>
 
       <section class="checkout-panel">
-        <div class="checkout-title">Order Summary</div>
+        <div class="checkout-title">Order summary</div>
         <div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
-        <div class="summary-row"><span id="cartDiscountLabel">Discounts</span><strong id="cartDiscount">-$0.00</strong></div>
+        <div id="cartDiscountRow" class="summary-row"><span id="cartDiscountLabel">Discounts</span><strong id="cartDiscount">-$0.00</strong></div>
         <div class="summary-row"><span>Shipping</span><strong id="cartShipping">$0.00</strong></div>
         <div class="summary-row"><span>Sales Tax (8%)</span><strong id="cartTax">$0.00</strong></div>
-        <div class="summary-row"><span>PayPal/Venmo/Apple Pay Processing Fee (5%)</span><strong id="cartProcessingFee">$0.00</strong></div>
+        <div id="cartFeeRow" class="summary-row"><span>Processing fee (5% · PayPal, Venmo, Apple Pay)</span><strong id="cartProcessingFee">$0.00</strong></div>
         <div class="summary-row total-row"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
         <div class="server-note">Final pricing is revalidated securely when the request is submitted.</div>
       </section>
 
       <section id="customerPreview" class="checkout-panel customer-preview">
-        <div class="checkout-title">Checkout Customer</div>
+        <div class="checkout-title">Your details</div>
         <div id="customerSignedOut" class="customer-signed-out">
           <p>Sign in before checking out. Nexus will fill your customer information automatically.</p>
           <button id="cartSignInButton" class="auth-secondary" type="button">Sign In</button>
@@ -442,13 +442,7 @@ app.innerHTML = `
       </section>
 
       <section class="checkout-panel discount-code-panel">
-        <div class="discount-code-heading">
-          <div>
-            <span class="eyebrow">PROMOTIONS</span>
-            <div class="checkout-title">Discount Code</div>
-          </div>
-          <span class="discount-code-badge">OPTIONAL</span>
-        </div>
+        <div class="checkout-title">Discount code <span class="checkout-title-note">Optional</span></div>
         <div class="discount-code-row">
           <label class="discount-code-field" for="discountCode">
             <span class="sr-only">Discount code</span>
@@ -899,6 +893,38 @@ const refreshHistoryButton = document.querySelector<HTMLButtonElement>('#refresh
 
 const money = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
+
+let addedBannerTimer = 0
+function showAddedToCart(product: CatalogProduct) {
+  document.querySelector('.cart-added')?.remove()
+  window.clearTimeout(addedBannerTimer)
+  const line = cart.find(item => item.id === product.id)
+  const count = cartQuantity(cart)
+  const banner = document.createElement('div')
+  banner.className = 'cart-added'
+  banner.setAttribute('role', 'status')
+  banner.innerHTML = `
+    <img class="cart-added-thumb" src="${escapeHtml(product.image_url || defaultProductImageUrl)}" alt="" />
+    <span class="cart-added-copy">
+      <small><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Added to cart</small>
+      <strong>${escapeHtml(product.name)}</strong>
+      <span>${line && line.quantity > 1 ? 'Qty ' + line.quantity + ' · ' : ''}${money(Number(product.price))} · ${count} item${count === 1 ? '' : 's'} in cart</span>
+    </span>
+    <button type="button" class="cart-added-view">View cart</button>
+    <button type="button" class="cart-added-close" aria-label="Dismiss">×</button>`
+  // A modal dialog sits in the top layer, so show the banner inside it when one is open.
+  const host = document.querySelector<HTMLDialogElement>('dialog[open]') || document.body
+  host.appendChild(banner)
+  const dismiss = () => { banner.classList.remove('show'); window.setTimeout(() => banner.remove(), 220) }
+  banner.querySelector('.cart-added-close')!.addEventListener('click', dismiss)
+  banner.querySelector('.cart-added-view')!.addEventListener('click', () => {
+    banner.remove()
+    document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog => dialog.close())
+    openCartDialog()
+  })
+  requestAnimationFrame(() => banner.classList.add('show'))
+  addedBannerTimer = window.setTimeout(dismiss, 4000)
+}
 
 function showToast(message: string) {
   toast.textContent = message
@@ -1424,7 +1450,7 @@ function renderProducts() {
       if (!product) return
       cart = addProduct(cart, product)
       updateCartUI()
-      showToast('Added to cart')
+      showAddedToCart(product)
     })
   })
 }
@@ -1456,7 +1482,7 @@ function openProduct(id: string) {
     if (!available) return
     cart = addProduct(cart, product)
     updateCartUI()
-    showToast('Added to cart')
+    showAddedToCart(product)
   })
 
   productDialog.showModal()
@@ -1543,12 +1569,15 @@ function updateCartUI() {
         <strong>${escapeHtml(item.product)}</strong>
         <span>${money(item.price)} each</span>
       </div>
-      <div class="quantity-control">
-        <button type="button" data-qty-id="${item.id}" data-delta="-1">−</button>
-        <b>${item.quantity}</b>
-        <button type="button" data-qty-id="${item.id}" data-delta="1">+</button>
-      </div>
       <strong class="line-total">${money(item.price * item.quantity)}</strong>
+      <div class="cart-row-controls">
+        <div class="quantity-control" role="group" aria-label="Quantity of ${escapeHtml(item.product)}">
+          <button type="button" data-qty-id="${item.id}" data-delta="-1" aria-label="Decrease quantity">−</button>
+          <b aria-live="polite">${item.quantity}</b>
+          <button type="button" data-qty-id="${item.id}" data-delta="1" aria-label="Increase quantity">+</button>
+        </div>
+        <button type="button" class="cart-remove" data-qty-id="${item.id}" data-delta="${-item.quantity}">Remove</button>
+      </div>
     </div>
   `).join('')
 
@@ -1571,9 +1600,21 @@ function updateCartUI() {
   document.querySelector<HTMLElement>('#cartShipping')!.textContent = money(totals.shipping)
   document.querySelector<HTMLElement>('#cartTax')!.textContent = money(totals.tax)
   document.querySelector<HTMLElement>('#cartTotal')!.textContent = money(totals.total)
+  syncSummaryRows()
 
   updateCheckoutCustomer()
   updateRequestButton()
+}
+
+// Hide $0.00 discount and fee lines so the summary only lists what applies.
+function syncSummaryRows() {
+  const hideIfZero = (rowId: string, valueId: string) => {
+    const row = document.querySelector<HTMLElement>('#' + rowId)
+    const value = document.querySelector<HTMLElement>('#' + valueId)?.textContent || ''
+    if (row) row.hidden = !/[1-9]/.test(value)
+  }
+  hideIfZero('cartDiscountRow', 'cartDiscount')
+  hideIfZero('cartFeeRow', 'cartProcessingFee')
 }
 
 function updateCheckoutCustomer() {
@@ -1660,6 +1701,7 @@ async function ensureCheckoutOrder(paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pa
   document.querySelector<HTMLElement>('#cartShipping')!.textContent = money(result.totals.shipping)
   document.querySelector<HTMLElement>('#cartTax')!.textContent = money(result.totals.tax)
   document.querySelector<HTMLElement>('#cartProcessingFee')!.textContent = money(result.totals.processingFee)
+  syncSummaryRows()
   document.querySelector<HTMLElement>('#cartTotal')!.textContent = money(result.totals.total)
 
   cartItems.querySelectorAll<HTMLButtonElement>('button').forEach(button => {
@@ -1833,6 +1875,7 @@ async function setupCartPayNow() {
           )
 
           document.querySelector<HTMLElement>('#cartProcessingFee')!.textContent = money(processingFee)
+          syncSummaryRows()
           document.querySelector<HTMLElement>('#cartTax')!.textContent = money(tax)
           document.querySelector<HTMLElement>('#cartTotal')!.textContent = money(applePayTotal)
 
