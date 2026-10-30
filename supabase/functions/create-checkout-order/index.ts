@@ -5,21 +5,26 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 // Order numbers are assigned in Supabase via public.assign_order_number().
 // Base: deployed version 14.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://nexus.sciencebyhugs.com",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+const allowedOrigins = new Set([
+  "https://nexus.sciencebyhugs.com",
+  "capacitor://localhost",
+]);
 
 const money = (value: number) => Math.round(value * 100) / 100;
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("Origin") || "";
+  const corsHeaders = {
+    ...(allowedOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
