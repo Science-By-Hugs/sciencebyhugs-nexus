@@ -151,3 +151,22 @@ dialog::backdrop {background:#171a1ccc!important;backdrop-filter:none!important}
 #cartContent .checkout-choice{display:flex;flex-direction:column;gap:12px}
 #cartContent #payNowButton{width:100%;min-height:54px!important;border-radius:14px!important;font-size:17px!important;font-weight:600!important}
 #cartContent .checkout-choice p{margin:0;text-align:center;font-size:13px;line-height:18px;color:var(--muted)}
+
+
+/* Native iOS: Capacitor renders beneath the status bar with contentInset=never.
+   Keep the actual header content below the Dynamic Island/notch while its
+   background still fills the safe area. Web/PWA layout is unchanged. */
+body.native-app .topbar {
+  top: 0;
+  box-sizing: border-box;
+  padding-top: calc(16px + var(--app-safe-top));
+}
+@media (max-width: 600px) {
+  body.native-app .topbar {
+    min-height: calc(56px + var(--app-safe-top));
+    padding-top: calc(8px + var(--app-safe-top));
+  }
+  body.native-app .cart-added {
+    top: calc(12px + var(--app-safe-top));
+  }
+}
