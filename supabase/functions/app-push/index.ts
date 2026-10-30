@@ -6,7 +6,7 @@ import { ensureKeys, deliver, handleSubscription } from '../_shared/web-push.ts'
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' }
 const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}')
-const admin = createClient(Deno.env.get('SUPABASE_URL')!, keys.default || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+const admin = createClient(Deno.env.get('SUPABASE_URL')!, keys.nexus_rotation_20261023 || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
 function createHandler(sql: any) {
 
 async function dispatch() {
