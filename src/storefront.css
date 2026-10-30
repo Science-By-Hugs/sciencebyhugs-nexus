@@ -170,3 +170,120 @@ body.native-app .topbar {
     top: calc(12px + var(--app-safe-top));
   }
 }
+
+/* Native iPhone sheet-safe layout. These overrides intentionally do not apply
+   to the website/PWA: WKWebView with contentInset=never draws beneath the
+   Dynamic Island and Home indicator. */
+@media (max-width: 600px) {
+  body.native-app dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog,.policy-dialog,.referral-dialog) {
+    box-sizing: border-box;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  /* The Cart, Account and Menu close controls are direct dialog children;
+     they do not live in a .sheet-topbar and previously missed safe-area insets. */
+  body.native-app dialog:is(.cart-dialog,.account-dialog,.menu-dialog,.support-dialog) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-top: calc(var(--app-safe-top) + 64px);
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 32px);
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  body.native-app dialog:is(.cart-dialog,.account-dialog,.menu-dialog) > .dialog-close {
+    position: sticky;
+    top: calc(var(--app-safe-top) + 8px);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: calc(var(--app-safe-top) + 8px) 0 8px auto;
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  body.native-app .support-dialog > .subpage-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    margin: 0 -16px 16px;
+    padding: calc(var(--app-safe-top) + 8px) 16px 8px;
+    background: var(--bg) !important;
+  }
+
+  /* Policy and referral sheets have independently scrollable content.
+     Make the header non-scrolling and allocate only the remaining height
+     to the body instead of subtracting a hard-coded 75/165px. */
+  body.native-app dialog:is(.policy-dialog,.referral-dialog)[open] {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body.native-app dialog:is(.policy-dialog,.referral-dialog) > :is(.policy-dialog-header,.referral-dialog-header) {
+    flex: 0 0 auto;
+    padding-top: calc(var(--app-safe-top) + 12px);
+  }
+  body.native-app dialog:is(.policy-dialog,.referral-dialog) > :is(.policy-dialog-content,.referral-dialog-content) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  }
+
+  /* The product bottom sheet begins below the safe top, but its direct close
+     button still needs to remain visible during product-detail scrolling. */
+  body.native-app dialog.product-dialog {
+    box-sizing: border-box;
+    height: calc(100dvh - var(--app-safe-top) - 10px);
+    max-height: calc(100dvh - var(--app-safe-top) - 10px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.native-app dialog.product-dialog > .dialog-close {
+    position: sticky;
+    top: 8px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 8px 0 8px auto;
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  body.native-app .mobile-bottom-nav {
+    box-sizing: border-box;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  body.native-app.keyboard-open .mobile-bottom-nav {
+    display: none;
+  }
+
+  /* iOS zooms focused form controls with text smaller than 16px. */
+  body.native-app :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
+    font-size: 16px;
+  }
+}
