@@ -284,6 +284,6 @@ body.native-app .topbar {
 
   /* iOS zooms focused form controls with text smaller than 16px. */
   body.native-app :is(input:not([type=checkbox]):not([type=radio]),textarea,select) {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
