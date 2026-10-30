@@ -44,6 +44,7 @@ import { validateDiscountCode, type DiscountValidation } from './services/discou
 import { createCheckoutOrder, type CheckoutOrderResult } from './services/checkout'
 import { getMyOrderHistory, type NexusOrderHistory } from './services/accountHistory'
 import { capturePayPalOrder, createPayPalOrder, getPayPalSdk } from './services/paypal'
+import { payWithNativePayPal } from './services/nativePayPal'
 import { getZelleConfig, submitZellePayment } from './services/zelle'
 import { nexusPolicies } from './policies'
 import {
@@ -496,8 +497,10 @@ app.innerHTML = `
           <paypal-button id="cartPayPalButton" class="nexus-paypal-button" hidden></paypal-button>
           <venmo-button id="cartVenmoButton" class="nexus-venmo-button" type="pay" hidden></venmo-button>
           <apple-pay-button id="cartApplePayButton" class="nexus-apple-pay-button" buttonstyle="black" type="buy" locale="en-US" hidden></apple-pay-button>
+          <button id="cartNativePayPalButton" class="nexus-native-paypal-button" type="button" hidden>Pay with PayPal</button>
           <button id="cartZelleStartButton" class="zelle-submit-button" type="button" hidden>Pay with Zelle</button>
         </div>
+        <p id="cartNativeWalletNote" class="cart-native-wallet-note" hidden></p>
         <div id="cartPayMessage" class="paypal-message" aria-live="polite"></div>
 
         <div id="cartZellePanel" class="zelle-shell" hidden>
@@ -891,6 +894,8 @@ const cartPayPanel = document.querySelector<HTMLElement>('#cartPayPanel')!
 const cartPayPalButton = document.querySelector<HTMLElement>('#cartPayPalButton')!
 const cartVenmoButton = document.querySelector<HTMLElement>('#cartVenmoButton')!
 const cartApplePayButton = document.querySelector<HTMLElement>('#cartApplePayButton')!
+const cartNativePayPalButton = document.querySelector<HTMLButtonElement>('#cartNativePayPalButton')!
+const cartNativeWalletNote = document.querySelector<HTMLElement>('#cartNativeWalletNote')!
 const cartZelleStartButton = document.querySelector<HTMLButtonElement>('#cartZelleStartButton')!
 const cartZellePanel = document.querySelector<HTMLElement>('#cartZellePanel')!
 const cartZelleDetails = document.querySelector<HTMLElement>('#cartZelleDetails')!
@@ -1753,10 +1758,53 @@ async function finishPayNow(
   await refreshOrderHistory()
 }
 
+const NATIVE_WALLET_NOTE =
+  'Venmo and Apple Pay are not available in the app yet. Use PayPal or Zelle here, or pay with Venmo or Apple Pay at nexus.sciencebyhugs.com in Safari.'
+
+function nativePayPalFailureMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'PayPal checkout could not be completed.'
+}
+
+function setupNativeCartWallets() {
+  cartPayPalButton.hidden = true
+  cartVenmoButton.hidden = true
+  cartApplePayButton.hidden = true
+  cartNativePayPalButton.hidden = false
+  cartNativeWalletNote.hidden = false
+  cartNativeWalletNote.textContent = NATIVE_WALLET_NOTE
+  if (cartNativePayPalButton.dataset.bound) return
+  cartNativePayPalButton.dataset.bound = 'true'
+  cartNativePayPalButton.addEventListener('click', async () => {
+    if (cartNativePayPalButton.disabled) return
+    cartNativePayPalButton.disabled = true
+    cartPayMessage.textContent = 'Opening PayPal…'
+    try {
+      const checkout = await ensureCheckoutOrder('PayPal')
+      const result = await payWithNativePayPal(checkout.orderId)
+      if (result.status === 'cancelled') {
+        cartPayMessage.textContent = 'PayPal checkout was cancelled. You can choose another option.'
+        return
+      }
+      if (result.orderNumber && activeCheckoutOrder) activeCheckoutOrder.orderNumber = result.orderNumber
+      await finishPayNow(
+        'Payment received.',
+        'Your PayPal payment was verified and your order is now processing. Your receipt is in My Account → Order Activity.',
+      )
+    } catch (error) {
+      cartPayMessage.textContent = nativePayPalFailureMessage(error)
+    } finally {
+      cartNativePayPalButton.disabled = false
+    }
+  })
+}
+
 async function setupCartPayNow() {
   cartPayMessage.textContent = ''
 
-  try {
+  // The installed app uses the native PayPal iOS SDK; the PayPal web SDK is not a
+  // supported checkout inside WKWebView. The website keeps the web wallets below.
+  if (isNativeApp) setupNativeCartWallets()
+  else try {
     const sdk = await getPayPalSdk()
     const methods = await sdk.findEligibleMethods({ currencyCode: 'USD' })
     const paypalEligible = methods.isEligible('paypal')
@@ -2389,6 +2437,44 @@ function renderAccountHistory() {
   ])
 }
 
+// Order Activity "pay this order" in the installed app: swap each PayPal web-SDK
+// element for a native button and explain why Venmo is not offered here.
+function setupNativeOrderPayPal(paypalButtons: HTMLElement[], venmoButtons: HTMLElement[]) {
+  venmoButtons.forEach(button => { button.hidden = true })
+  paypalButtons.forEach(webButton => {
+    const orderId = webButton.dataset.orderId
+    if (!orderId || webButton.dataset.nativeReplaced) return
+    webButton.dataset.nativeReplaced = 'true'
+    webButton.hidden = true
+    const message = document.querySelector<HTMLElement>(`[data-paypal-message="${CSS.escape(orderId)}"]`)
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'nexus-native-paypal-button'
+    button.textContent = 'Pay with PayPal'
+    webButton.insertAdjacentElement('afterend', button)
+    if (message && venmoButtons.length) message.textContent = NATIVE_WALLET_NOTE
+    button.addEventListener('click', async () => {
+      if (button.disabled) return
+      button.disabled = true
+      if (message) message.textContent = 'Opening PayPal…'
+      try {
+        const result = await payWithNativePayPal(orderId)
+        if (result.status === 'cancelled') {
+          if (message) message.textContent = 'PayPal checkout was cancelled.'
+          return
+        }
+        if (message) message.textContent = 'PayPal payment completed.'
+        showToast('PayPal payment completed')
+        await refreshOrderHistory()
+      } catch (error) {
+        if (message) message.textContent = nativePayPalFailureMessage(error)
+      } finally {
+        button.disabled = false
+      }
+    })
+  })
+}
+
 async function setupPayPalCheckout() {
   const paypalButtons = [
     ...document.querySelectorAll<HTMLElement>('.nexus-paypal-button'),
@@ -2398,6 +2484,11 @@ async function setupPayPalCheckout() {
   ]
 
   if (!paypalButtons.length && !venmoButtons.length) return
+
+  if (isNativeApp) {
+    setupNativeOrderPayPal(paypalButtons, venmoButtons)
+    return
+  }
 
   try {
     const sdk = await getPayPalSdk()
@@ -2702,7 +2793,7 @@ async function refreshAccount() {
 
   // Warm the PayPal/Venmo SDK after sign-in so wallet buttons open faster later.
   // This runs off the critical account-render path and reuses getPayPalSdk()'s cached promise.
-  if (currentProfile && currentAccountIsActive()) {
+  if (currentProfile && currentAccountIsActive() && !isNativeApp) {
     window.setTimeout(() => {
       void getPayPalSdk().catch(error => {
         console.info('PayPal preload unavailable', error)

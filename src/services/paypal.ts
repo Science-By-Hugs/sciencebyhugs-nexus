@@ -4,6 +4,8 @@ type PayPalConfig = {
   configured: boolean
   environment: 'sandbox' | 'live' | string
   clientId: string
+  /** PayPal merchant account ID; required by the native iOS SDK. */
+  merchantId?: string | null
 }
 
 declare global {

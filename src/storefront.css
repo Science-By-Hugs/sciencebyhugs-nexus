@@ -317,3 +317,9 @@ body.native-app dialog.receipt-overlay {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Native app PayPal button (iOS SDK checkout). Matches the gold PayPal button the
+   website renders through the PayPal web SDK, so the payment option reads the same. */
+.nexus-native-paypal-button {display:block;width:100%;min-height:50px;border:0;border-radius:14px;background:#FFC439;color:#111;font-size:17px;font-weight:700;letter-spacing:0}
+.nexus-native-paypal-button:disabled {opacity:.6;cursor:wait;color:#111}
+.cart-native-wallet-note {margin:10px 0 0;font-size:13px;line-height:18px;color:var(--muted)}

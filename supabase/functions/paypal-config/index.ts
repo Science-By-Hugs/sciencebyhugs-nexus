@@ -57,5 +57,7 @@ Deno.serve(async (req: Request) => {
     configured: true,
     environment,
     clientId,
+    // Public merchant account ID (not a secret). Required by the native iOS PayPal SDK.
+    merchantId: Deno.env.get("PAYPAL_MERCHANT_ID") || null,
   });
 });

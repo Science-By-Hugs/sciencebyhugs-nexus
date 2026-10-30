@@ -47,6 +47,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+        if let url = userActivity.webpageURL, NexusPayPalPlugin.handleReturn(url) { return true }
         // Called when the app was launched with an activity, including Universal Links.
         // Feel free to add additional processing here, but if you want the App API to support
         // tracking app url opens, make sure to keep this call
@@ -66,6 +67,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: context.url, options: [:])
         }
         for activity in connectionOptions.userActivities {
+            if let url = activity.webpageURL, NexusPayPalPlugin.handleReturn(url) { continue }
             _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: activity, restorationHandler: { _ in })
         }
     }
@@ -77,6 +79,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        if let url = userActivity.webpageURL, NexusPayPalPlugin.handleReturn(url) { return }
         _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
     }
 }
@@ -90,6 +93,7 @@ class NexusBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(NexusAppleSignInPlugin())
         bridge?.registerPluginInstance(safeAreaPlugin)
+        bridge?.registerPluginInstance(NexusPayPalPlugin())
     }
 
     // With contentInset = never the WebView spans the whole screen, so the
