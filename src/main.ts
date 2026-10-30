@@ -57,6 +57,17 @@ const isNativeApp = Capacitor.isNativePlatform()
 document.documentElement.classList.toggle('native-app', isNativeApp)
 document.body.classList.toggle('native-app', isNativeApp)
 
+// Keep bottom navigation out of the way of the native iPhone keyboard.
+// Scope this to the installed app; the web storefront retains its own layout.
+if (isNativeApp) {
+  const editingControl = (element: Element | null) =>
+    element?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,select,[contenteditable="true"]') ?? false
+  const syncEditingFocus = () =>
+    document.body.classList.toggle('keyboard-open', editingControl(document.activeElement))
+  document.addEventListener('focusin', syncEditingFocus)
+  document.addEventListener('focusout', () => requestAnimationFrame(syncEditingFocus))
+}
+
 if (!isNativeApp) {
   registerSW({
     immediate: true,
