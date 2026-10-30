@@ -1,7 +1,24 @@
 import { supabase } from './services/supabase'
+import { Capacitor } from '@capacitor/core'
+import { PushNotifications, type Token } from '@capacitor/push-notifications'
 
 const functionName = 'app-push'
+const nativeFunctionName = 'native-push'
 const appName = 'nexus'
+const nativePlatform = Capacitor.getPlatform()
+const isNative = Capacitor.isNativePlatform()
+const nativeTokenKey = `nexus-native-push-token:${nativePlatform}`
+const nativeInstallationKey = 'nexus-native-push-installation'
+
+function nativeInstallationId() {
+  try {
+    const existing = window.localStorage.getItem(nativeInstallationKey)
+    if (existing) return existing
+    const created = crypto.randomUUID()
+    window.localStorage.setItem(nativeInstallationKey, created)
+    return created
+  } catch { return crypto.randomUUID() }
+}
 
 function supported() {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
@@ -15,9 +32,12 @@ async function registration() {
   ])
 }
 
-async function api(action: string, subscription?: PushSubscription) {
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    body: { action, app: appName, subscription: subscription?.toJSON() },
+async function api(action: string, subscription?: PushSubscription, deviceToken?: string) {
+  const nativeAction = action.startsWith('native-')
+  const { data, error } = await supabase.functions.invoke(nativeAction ? nativeFunctionName : functionName, {
+    body: nativeAction
+      ? { action: action.replace('native-', '').replace('subscribe', 'register').replace('unsubscribe', 'unregister'), installationId: nativeInstallationId(), token: deviceToken }
+      : { action, app: appName, subscription: subscription?.toJSON() },
   })
   if (error || data?.error) {
     let detail = data?.error
@@ -29,12 +49,55 @@ async function api(action: string, subscription?: PushSubscription) {
   return data
 }
 
+function storedNativeToken() {
+  try { return window.localStorage.getItem(nativeTokenKey) || '' } catch { return '' }
+}
+
+function saveNativeToken(token: string) {
+  try { window.localStorage.setItem(nativeTokenKey, token) } catch {}
+}
+
+function clearNativeToken() {
+  try { window.localStorage.removeItem(nativeTokenKey) } catch {}
+}
+
+async function registerNativeToken() {
+  return new Promise<string>(async (resolve, reject) => {
+    let settled = false
+    const finish = (callback: () => void) => {
+      if (settled) return
+      settled = true
+      callback()
+    }
+    const registration = await PushNotifications.addListener('registration', (token: Token) => {
+      finish(() => resolve(token.value))
+    })
+    const registrationError = await PushNotifications.addListener('registrationError', error => {
+      finish(() => reject(new Error(error.error || 'Native notification registration failed.')))
+    })
+    window.setTimeout(() => finish(() => reject(new Error('Native notification registration timed out.'))), 15000)
+    try { await PushNotifications.register() } catch (error) { finish(() => reject(error)) }
+    void Promise.resolve().then(async () => {
+      while (!settled) await new Promise(resolveWait => window.setTimeout(resolveWait, 100))
+      await registration.remove()
+      await registrationError.remove()
+    })
+  })
+}
+
 function applicationKey(key: string) {
   const raw = atob(key.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - key.length % 4) % 4))
   return Uint8Array.from(raw, c => c.charCodeAt(0))
 }
 
 export async function pushEnabled() {
+  if (isNative) {
+    const permission = await PushNotifications.checkPermissions()
+    const token = storedNativeToken()
+    if (permission.receive !== 'granted' || !token) return false
+    const data = await api('native-status', undefined, token)
+    return Boolean(data.enabled)
+  }
   if (!supported() || Notification.permission !== 'granted') return false
   const sub = await (await registration()).pushManager.getSubscription()
   if (!sub) return false
@@ -43,6 +106,17 @@ export async function pushEnabled() {
 }
 
 export async function enablePush() {
+  if (isNative) {
+    let permission = await PushNotifications.checkPermissions()
+    if (permission.receive === 'prompt' || permission.receive === 'prompt-with-rationale') {
+      permission = await PushNotifications.requestPermissions()
+    }
+    if (permission.receive !== 'granted') throw new Error('Notifications are blocked. Allow them in iPhone Settings > Notifications > NEXUS Staging.')
+    const token = await registerNativeToken()
+    await api('native-subscribe', undefined, token)
+    saveNativeToken(token)
+    return
+  }
   if (!supported()) await registration()
   // Permission must be requested directly in the user's click handler on iOS.
   const permission = await Notification.requestPermission()
@@ -63,6 +137,13 @@ export async function enablePush() {
 }
 
 export async function disablePush() {
+  if (isNative) {
+    const token = storedNativeToken()
+    if (token) await api('native-unsubscribe', undefined, token)
+    await PushNotifications.unregister()
+    clearNativeToken()
+    return
+  }
   if (!supported()) return
   const sub = await (await registration()).pushManager.getSubscription()
   if (!sub) return
@@ -72,6 +153,13 @@ export async function disablePush() {
 }
 
 export async function testPush() {
+  if (isNative) {
+    const token = storedNativeToken()
+    if (!token) throw new Error('Enable notifications on this iPhone first.')
+    const result = await api('native-test', undefined, token)
+    if (!result.sent) throw new Error('This device token is no longer active. Turn notifications off and enable them again.')
+    return
+  }
   const sub = await (await registration()).pushManager.getSubscription()
   if (!sub) throw new Error('Enable notifications on this device first.')
   const result = await api('test', sub)
@@ -81,7 +169,7 @@ export async function testPush() {
 export function pushPanel() {
   return `<section class="push-panel" aria-label="Push notifications">
     <strong>Push notifications</strong>
-    <p>Get order, payment, and estimated delivery updates even when NEXUS is closed. On iPhone/iPad, open the app from your Home Screen first.</p>
+    <p>Get order, payment, and estimated delivery updates even when NEXUS is closed.${isNative ? ' NEXUS uses native iPhone notifications.' : ' On iPhone/iPad, install the web app to your Home Screen first.'}</p>
     <p data-push-status role="status" aria-live="polite">Checking this device…</p>
     <div class="push-actions"><button type="button" data-push-toggle disabled>Enable notifications</button>
     <button type="button" data-push-test hidden>Send test notification</button></div>

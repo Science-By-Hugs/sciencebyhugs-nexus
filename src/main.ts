@@ -10,6 +10,7 @@ import { showLaunchLoader } from './launchLoader'
 import { icon } from './icons'
 import { bindSheetHeaders } from './dialogNavigation'
 import { registerSW } from 'virtual:pwa-register'
+import { Capacitor } from '@capacitor/core'
 import { fetchCatalog, type CatalogProduct } from './services/catalog'
 import { loadMyDiscountCodes } from './services/myDiscounts'
 import {
@@ -52,15 +53,21 @@ import {
   type ReferralDashboard,
 } from './services/referrals'
 
-registerSW({
-  immediate: true,
-  onRegisteredSW(_swUrl, registration) {
-    if (!registration) return
-    // Check once at startup. A newly downloaded worker waits until the
-    // current Nexus session is closed before taking control.
-    void registration.update()
-  },
-})
+const isNativeApp = Capacitor.isNativePlatform()
+document.documentElement.classList.toggle('native-app', isNativeApp)
+document.body.classList.toggle('native-app', isNativeApp)
+
+if (!isNativeApp) {
+  registerSW({
+    immediate: true,
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return
+      // Check once at startup. A newly downloaded worker waits until the
+      // current Nexus session is closed before taking control.
+      void registration.update()
+    },
+  })
+}
 
 const app = document.querySelector<HTMLDivElement>('#app')
 showLaunchLoader()

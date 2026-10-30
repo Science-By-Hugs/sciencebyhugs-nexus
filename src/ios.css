@@ -19,6 +19,9 @@
 @media (max-width:600px) {
   html,body {background:var(--ios-ground)}
 
+  body.native-app #staging-environment-label {position:relative}
+  body.native-app .topbar {top:0}
+
   /* Navigation bar: wordmark left, round icon buttons right */
   .topbar {min-height:56px;padding:8px 16px;background:var(--ios-ground)}
   .minimal-wordmark {font-size:17px;letter-spacing:.04em;font-weight:600}

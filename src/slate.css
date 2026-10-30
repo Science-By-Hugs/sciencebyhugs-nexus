@@ -29,6 +29,8 @@ body::before,.stars,.hero::before,.hero::after,.entry-gate-backdrop,.entry-gate-
 /* Navigation and page rhythm */
 #staging-environment-label {position:sticky;top:0;background:var(--nexus-navigation);color:var(--muted);font-size:10px;letter-spacing:.05em;padding:calc(5px + env(safe-area-inset-top)) 16px 5px}
 .topbar {top:calc(25px + env(safe-area-inset-top));min-height:80px;padding:16px max(20px,calc((100vw - 1120px)/2));background:var(--nexus-navigation);border:0;backdrop-filter:none;gap:16px}
+body.native-app #staging-environment-label {padding-top:calc(5px + var(--app-safe-top))}
+body.native-app .topbar {top:calc(25px + var(--app-safe-top))}
 .minimal-wordmark {display:flex;flex-direction:column;align-items:flex-start;font-size:27px;line-height:1;font-weight:650;letter-spacing:-1px;color:var(--text)}
 .minimal-wordmark>span {display:block;margin-top:7px;font-size:9px;font-weight:450;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
 .wordmark-dot,.system-status {display:none}
