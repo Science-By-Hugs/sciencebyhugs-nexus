@@ -78,7 +78,7 @@ export function changeQuantity(cart: CartItem[], id: string, delta: number): Car
 }
 
 export type AppliedDiscount = {
-  kind: 'free_shipping' | 'referral_bonus' | 'new_customer' | 'group_buy'
+  kind: 'free_shipping' | 'referral_bonus' | 'new_customer' | 'group_buy' | 'custom'
   discountPercent?: number | null
   shippingDiscount?: number | null
 }
@@ -100,12 +100,16 @@ export function calculateCart(cart: CartItem[], foundingMember: boolean, applied
     shipping += SHIPPING_RATES[source] || 0
   })
 
+  // Match the server (evaluate_discount_code): a code with a shipping amount discounts
+  // shipping; otherwise it is a percent off merchandise. Covers custom codes too.
+  const isShippingDiscount = Boolean(appliedDiscount) &&
+    (appliedDiscount!.kind === 'free_shipping' || appliedDiscount!.discountPercent == null)
   const percent = Number(appliedDiscount?.discountPercent || 0)
-  const discount = appliedDiscount && appliedDiscount.kind !== 'free_shipping'
+  const discount = appliedDiscount && !isShippingDiscount
     ? Math.round((subtotal * percent / 100) * 100) / 100
     : 0
-  const shippingDiscount = appliedDiscount?.kind === 'free_shipping'
-    ? Math.min(shipping, Number(appliedDiscount.shippingDiscount || 0))
+  const shippingDiscount = isShippingDiscount
+    ? Math.min(shipping, Number(appliedDiscount!.shippingDiscount || 0))
     : 0
   shipping = Math.max(0, shipping - shippingDiscount)
 

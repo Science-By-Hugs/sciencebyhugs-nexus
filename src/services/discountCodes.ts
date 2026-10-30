@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 export type DiscountValidation = {
   id: string
   code: string
-  kind: 'free_shipping' | 'referral_bonus' | 'new_customer' | 'group_buy'
+  kind: 'free_shipping' | 'referral_bonus' | 'new_customer' | 'group_buy' | 'custom'
   oneTime: boolean
   permanent: boolean
   discountPercent: number | null
