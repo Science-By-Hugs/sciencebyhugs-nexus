@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
       return json({ unregistered: true })
     }
 
-    const [device] = await sql`
+    const [device] = await sql<{ id: string; token: string; apns_environment: string }[]>`
       select id, token, apns_environment from public.native_push_devices
       where installation_id = ${installationId} and user_id = ${user.id} and token = ${token} and invalidated_at is null`
 
