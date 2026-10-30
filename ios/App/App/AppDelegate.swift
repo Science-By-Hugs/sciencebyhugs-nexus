@@ -94,6 +94,7 @@ class NexusBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NexusAppleSignInPlugin())
         bridge?.registerPluginInstance(safeAreaPlugin)
         bridge?.registerPluginInstance(NexusPayPalPlugin())
+        bridge?.registerPluginInstance(NexusAppInfoPlugin())
     }
 
     // With contentInset = never the WebView spans the whole screen, so the
@@ -189,5 +190,28 @@ public class NexusAppleSignInPlugin: CAPPlugin, CAPBridgedPlugin, ASAuthorizatio
         let cancelled = (error as? ASAuthorizationError)?.code == .canceled
         pendingCall?.reject(cancelled ? "Apple sign-in cancelled" : "Apple sign-in could not finish", cancelled ? "cancelled" : "authorization_failed")
         pendingCall = nil; expectedState = nil; authorizationController = nil
+    }
+}
+
+/// Build facts the push backend needs: which APNs endpoint this build's device
+/// tokens belong to, and the bundle ID used as the APNs topic.
+/// Debug builds run from Xcode are signed with the development aps-environment;
+/// Release builds (TestFlight, App Store) use production.
+@objc(NexusAppInfoPlugin)
+public class NexusAppInfoPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NexusAppInfoPlugin"
+    public let jsName = "NexusAppInfo"
+    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "get", returnType: CAPPluginReturnPromise)]
+
+    @objc func get(_ call: CAPPluginCall) {
+        #if DEBUG
+        let apnsEnvironment = "development"
+        #else
+        let apnsEnvironment = "production"
+        #endif
+        call.resolve([
+            "apnsEnvironment": apnsEnvironment,
+            "bundleId": Bundle.main.bundleIdentifier ?? "",
+        ])
     }
 }

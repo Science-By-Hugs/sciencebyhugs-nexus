@@ -1,6 +1,6 @@
 import { marketingFields, marketingPanel, bindMarketing, saveMarketing, readMarketing } from './marketing'
 import { avatarMarkup, avatarPanel, bindAvatars } from './avatar'
-import { pushPanel, pushPrompt, bindPushPanel, disablePush } from './push'
+import { pushPanel, pushPrompt, bindPushPanel, disablePush, installNativePushHandlers, refreshNativePushToken } from './push'
 import './styles.css'
 import './brand.css'
 import './slate.css'
@@ -62,6 +62,20 @@ document.body.classList.toggle('native-app', isNativeApp)
 // Native safe areas, keyboard-aware viewport height and tab-bar hiding.
 // Scoped to the installed app; the web storefront retains its own layout.
 if (isNativeApp) installNativeViewport()
+
+// Notification taps open Order Activity for whoever is signed in on this device;
+// the notification itself carries no order data. Before sign-in, the request is
+// kept in the URL and handled by refreshAccount once the session loads.
+if (isNativeApp) installNativePushHandlers(() => {
+  if (currentProfile) {
+    if (!accountDialog.open) accountDialog.showModal()
+    showOrderActivity()
+    return
+  }
+  const pending = new URL(location.href)
+  pending.searchParams.set('push', 'orders')
+  history.replaceState(null, '', pending)
+})
 
 if (!isNativeApp) {
   registerSW({
@@ -2788,6 +2802,7 @@ async function refreshAccount() {
     if (!accountDialog.open) accountDialog.showModal()
     showOrderActivity()
   }
+  void refreshNativePushToken()
   updateCheckoutCustomer()
   updateCartUI()
 

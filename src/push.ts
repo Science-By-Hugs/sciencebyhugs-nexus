@@ -1,5 +1,5 @@
 import { supabase } from './services/supabase'
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import { PushNotifications, type Token } from '@capacitor/push-notifications'
 
 const functionName = 'app-push'
@@ -20,6 +20,15 @@ function nativeInstallationId() {
   } catch { return crypto.randomUUID() }
 }
 
+type NativeBuildInfo = { apnsEnvironment: 'development' | 'production'; bundleId: string }
+let buildInfoPromise: Promise<NativeBuildInfo | null> | null = null
+
+// Which APNs endpoint this build's tokens belong to (Debug → sandbox, Release/TestFlight → production).
+function nativeBuildInfo() {
+  buildInfoPromise ??= registerPlugin<{ get(): Promise<NativeBuildInfo> }>('NexusAppInfo').get().catch(() => null)
+  return buildInfoPromise
+}
+
 function supported() {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
@@ -34,9 +43,16 @@ async function registration() {
 
 async function api(action: string, subscription?: PushSubscription, deviceToken?: string) {
   const nativeAction = action.startsWith('native-')
+  const build = nativeAction ? await nativeBuildInfo() : null
   const { data, error } = await supabase.functions.invoke(nativeAction ? nativeFunctionName : functionName, {
     body: nativeAction
-      ? { action: action.replace('native-', '').replace('subscribe', 'register').replace('unsubscribe', 'unregister'), installationId: nativeInstallationId(), token: deviceToken }
+      ? {
+          action: action.replace('native-', '').replace('subscribe', 'register').replace('unsubscribe', 'unregister'),
+          installationId: nativeInstallationId(),
+          token: deviceToken,
+          environment: build?.apnsEnvironment,
+          bundleId: build?.bundleId,
+        }
       : { action, app: appName, subscription: subscription?.toJSON() },
   })
   if (error || data?.error) {
@@ -253,4 +269,40 @@ export async function bindPushPanel(userId = '') {
     catch (error) { status.textContent = error instanceof Error ? error.message : 'Could not send test notification.' }
     finally { test.disabled = false }
   })
+}
+
+// ---- Native (APNs) lifecycle: notification taps and token rotation ----
+
+// Only these in-app destinations may be opened from a notification payload.
+const nativePushRoutes: Record<string, 'orders'> = { '?push=orders': 'orders' }
+let nativeHandlersInstalled = false
+
+export function nativePushRoute(data: unknown): 'orders' | null {
+  const url = (data as { url?: unknown } | null | undefined)?.url
+  return typeof url === 'string' && Object.prototype.hasOwnProperty.call(nativePushRoutes, url) ? nativePushRoutes[url] : null
+}
+
+/** Call once at startup in the installed app, before the first notification can arrive. */
+export function installNativePushHandlers(openRoute: (route: 'orders') => void) {
+  if (!isNative || nativeHandlersInstalled) return
+  nativeHandlersInstalled = true
+  void PushNotifications.addListener('pushNotificationActionPerformed', action => {
+    const route = nativePushRoute(action.notification?.data)
+    if (route) openRoute(route)
+  })
+  // APNs may rotate a device token. While notifications are on, keep the server copy current.
+  void PushNotifications.addListener('registration', (token: Token) => {
+    const previous = storedNativeToken()
+    if (!previous || previous === token.value) return
+    void api('native-subscribe', undefined, token.value).then(() => saveNativeToken(token.value)).catch(() => undefined)
+  })
+}
+
+/** Re-request the current APNs token for a signed-in customer who already enabled notifications. */
+export async function refreshNativePushToken() {
+  if (!isNative || !storedNativeToken()) return
+  try {
+    const permission = await PushNotifications.checkPermissions()
+    if (permission.receive === 'granted') await PushNotifications.register()
+  } catch {}
 }

@@ -3,6 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.117.1'
 import postgres from 'npm:postgres@3.4.5'
 import webpush from 'npm:web-push@3.6.7'
 import { ensureKeys, deliver, handleSubscription } from '../_shared/web-push.ts'
+import { apnsConfig, sendApns } from '../_shared/apns.ts'
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' }
 const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}')
@@ -34,6 +35,20 @@ async function dispatch() {
         if (await deliver(admin, 'app_push_subscriptions', sub, event.payload, sql)) sent++
         await sql`update private.app_push_queue set delivered_endpoints=array_append(delivered_endpoints,${sub.id}::uuid) where id=${event.id}`
       } catch (error: any) { failed = true; console.error('Push delivery failed', error?.statusCode || 'network') }
+    }
+    // Native iPhone (APNs) devices for NEXUS customers. Each device id is recorded in
+    // delivered_endpoints like a web subscription, so a retried event never re-sends.
+    if (event.app === 'nexus' && apnsConfig().configured) {
+      const devices = await sql`select id, token, apns_environment from public.native_push_devices
+        where user_id=${event.user_id} and app='nexus' and invalidated_at is null`
+      for (const device of devices) {
+        if ((event.delivered_endpoints || []).includes(device.id)) continue
+        const result = await sendApns(device, event.payload)
+        if (result.ok) sent++
+        else if (result.invalidToken) await sql`update public.native_push_devices set invalidated_at=now(), updated_at=now() where id=${device.id}`
+        else { failed = true; console.error('APNs delivery failed', result.status, result.reason); continue }
+        await sql`update private.app_push_queue set delivered_endpoints=array_append(delivered_endpoints,${device.id}::uuid) where id=${event.id}`
+      }
     }
     if (!failed) await sql`update private.app_push_queue set delivered_at=now() where id=${event.id}`
   }
