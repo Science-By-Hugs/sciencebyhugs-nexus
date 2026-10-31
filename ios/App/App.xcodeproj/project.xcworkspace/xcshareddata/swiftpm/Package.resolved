@@ -1,5 +1,5 @@
 {
-  "originHash" : "c647526c915f3cd70e29a81cabca43782ef3b9a3c624523751c96bb21d013d9a",
+  "originHash" : "767a6ce1778f26ecb864f8cc0d1ead599e8d0c1bc1453fab5dbe104ede80168c",
   "pins" : [
     {
       "identity" : "capacitor-swift-pm",
@@ -8,6 +8,24 @@
       "state" : {
         "revision" : "4c7f346d16196e21fbe23d4a7a6fc7af62af6742",
         "version" : "8.5.3"
+      }
+    },
+    {
+      "identity" : "paypal-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/paypal/paypal-ios",
+      "state" : {
+        "revision" : "de98414f5cf74dc3db2239a4828b4760ef391d20",
+        "version" : "3.1.1"
+      }
+    },
+    {
+      "identity" : "paypal-risk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/paypal/paypal-risk-ios",
+      "state" : {
+        "revision" : "97d70968d508992f99ac9c46dd1da4c0cf0a2d97",
+        "version" : "5.6.0"
       }
     }
   ],
