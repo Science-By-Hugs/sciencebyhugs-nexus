@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(
     supabaseUrl,
-    secretKeys.default,
+    secretKeys.nexus_rotation_20261023,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
