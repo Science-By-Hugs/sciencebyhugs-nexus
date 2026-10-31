@@ -43,7 +43,8 @@ async function dispatch() {
         where user_id=${event.user_id} and app='nexus' and invalidated_at is null`
       for (const device of devices) {
         if ((event.delivered_endpoints || []).includes(device.id)) continue
-        const result = await sendApns(device, event.payload)
+        // A signing/config error is contained to this device so web pushes in the batch still go out.
+        const result = await sendApns(device, event.payload).catch(() => ({ ok: false as const, status: 0, reason: 'SendError', invalidToken: false }))
         if (result.ok) sent++
         else if (result.invalidToken) await sql`update public.native_push_devices set invalidated_at=now(), updated_at=now() where id=${device.id}`
         else { failed = true; console.error('APNs delivery failed', result.status, result.reason); continue }
