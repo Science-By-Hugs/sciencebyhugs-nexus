@@ -84,6 +84,24 @@ async function ensureOrderNumber(
   return String(data);
 }
 
+// PayPal's 3D Secure recommended actions (Advanced Checkout "3D Secure response parameters").
+// No authentication_result: the issuer did not require 3D Secure (SCA_WHEN_REQUIRED).
+function threeDSecureDecision(auth: any): "continue" | "retry" | "stop" {
+  if (!auth) return "continue";
+  const liability = String(auth.liability_shift || "").toUpperCase();
+  const enrollment = String(auth.three_d_secure?.enrollment_status || "").toUpperCase();
+  const status = String(auth.three_d_secure?.authentication_status || "").toUpperCase();
+  if (enrollment === "Y") {
+    if ((status === "Y" || status === "A") && liability === "POSSIBLE") return "continue";
+    if (status === "N" || status === "R") return "stop";
+    return "retry";
+  }
+  if (enrollment === "N" || enrollment === "B") return "continue";
+  if (enrollment === "U") return liability === "NO" ? "continue" : "retry";
+  if (liability === "UNKNOWN") return "retry";
+  return "continue";
+}
+
 function paypalBaseUrl() {
   return (Deno.env.get("PAYPAL_ENV") || "sandbox").toLowerCase() === "live"
     ? "https://api-m.paypal.com"
@@ -164,6 +182,7 @@ Deno.serve(async (req: Request) => {
   const requestedProvider = requestedMethod.toLowerCase();
   const provider =
     requestedProvider === "venmo" ? "Venmo" :
+    requestedProvider === "card" ? "Card" :
     requestedProvider === "apple pay" || requestedProvider === "applepay" ? "Apple Pay" :
     "PayPal";
 
@@ -204,6 +223,31 @@ Deno.serve(async (req: Request) => {
   }
 
   const accessToken = await getAccessToken();
+
+  if (provider === "Card") {
+    // Cards: the SDK reports success after 3D Secure whatever the bank decided, so check
+    // PayPal's authentication result here, and only capture the total the customer
+    // confirmed (card-checkout-quote sets it, including any credit-card surcharge).
+    const detailsResponse = await fetch(
+      `${paypalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    const details = await detailsResponse.json();
+    if (!detailsResponse.ok) return json({ error: "Could not verify this card payment. Please try again." }, 502);
+    const decision = threeDSecureDecision(details?.payment_source?.card?.authentication_result);
+    if (decision !== "continue") {
+      return json({
+        error: decision === "retry"
+          ? "Your bank could not verify this card. Please try again."
+          : "Your bank did not approve this card. Please use another card.",
+        retry: decision === "retry",
+      }, 402);
+    }
+    const held = Number(details?.purchase_units?.[0]?.amount?.value || 0);
+    if (Math.abs(held - Number(order.total || 0)) > 0.001) {
+      return json({ error: "Your total changed. Review it and confirm again." }, 409);
+    }
+  }
 
   const response = await fetch(
     `${paypalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`,
@@ -296,12 +340,14 @@ Deno.serve(async (req: Request) => {
         invoice_id: invoice.id,
         event_type:
           provider === "Venmo" ? "venmo_payment_captured" :
+          provider === "Card" ? "card_payment_captured" :
           provider === "Apple Pay" ? "apple_pay_payment_captured" :
           "paypal_payment_captured",
         description: provider + " payment captured in Nexus and order moved to processing.",
         metadata: {
           source:
             provider === "Venmo" ? "nexus_venmo" :
+            provider === "Card" ? "nexus_card" :
             provider === "Apple Pay" ? "nexus_apple_pay" :
             "nexus_paypal",
           provider,

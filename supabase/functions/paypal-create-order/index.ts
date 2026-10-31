@@ -88,11 +88,12 @@ Deno.serve(async (req: Request) => {
   const requestedProvider = requestedMethod.toLowerCase();
   const provider =
     requestedProvider === "venmo" ? "Venmo" :
+    requestedProvider === "card" ? "Card" :
     requestedProvider === "apple pay" || requestedProvider === "applepay" ? "Apple Pay" :
     "PayPal";
 
   if (!orderId) return json({ error: "Order ID is required" }, 400);
-  if (!["PayPal", "Venmo", "Apple Pay"].includes(provider)) {
+  if (!["PayPal", "Venmo", "Apple Pay", "Card"].includes(provider)) {
     return json({ error: "Unsupported payment method" }, 400);
   }
 
@@ -140,7 +141,7 @@ Deno.serve(async (req: Request) => {
   if (
     existingPayment?.provider === provider &&
     existingPayment?.provider_order_id &&
-    ["paypal_created", "venmo_created", "applepay_created", "submitted"].includes(String(existingPayment.status))
+    ["paypal_created", "venmo_created", "applepay_created", "card_created", "submitted"].includes(String(existingPayment.status))
   ) {
     return json({
       success: true,
@@ -202,6 +203,7 @@ Deno.serve(async (req: Request) => {
         amount: Number(order.total || 0),
         status:
           provider === "Venmo" ? "venmo_created" :
+          provider === "Card" ? "card_created" :
           provider === "Apple Pay" ? "applepay_created" :
           "paypal_created",
         updated_at: now,
@@ -219,6 +221,7 @@ Deno.serve(async (req: Request) => {
       payment_method: provider,
       payment_status:
         provider === "Venmo" ? "venmo_pending" :
+        provider === "Card" ? "card_pending" :
         provider === "Apple Pay" ? "applepay_pending" :
         "paypal_pending",
       updated_at: now,

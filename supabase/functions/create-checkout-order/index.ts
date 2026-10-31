@@ -96,10 +96,11 @@ Deno.serve(async (req: Request) => {
     requestedPaymentMethod === "venmo" ? "Venmo" :
     requestedPaymentMethod === "apple pay" || requestedPaymentMethod === "applepay" ? "Apple Pay" :
     requestedPaymentMethod === "zelle" ? "Zelle" :
+    requestedPaymentMethod === "card" ? "Card" :
     null;
 
   if (!paymentMethod) {
-    return json({ error: "Choose PayPal, Venmo, Apple Pay, or Zelle before starting checkout" }, 400);
+    return json({ error: "Choose PayPal, Venmo, Apple Pay, card, or Zelle before starting checkout" }, 400);
   }
 
   const requestedItems = Array.isArray(body.items) ? body.items : [];
@@ -200,6 +201,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const taxableMerchandise = money(Math.max(0, subtotal - discount));
+  // Card: no fee at creation. A credit-card surcharge (never debit/prepaid) is added by
+  // card-checkout-quote once PayPal reports the card type, and shown before payment.
   const processingFee =
     paymentMethod === "PayPal" || paymentMethod === "Venmo" || paymentMethod === "Apple Pay"
       ? money(taxableMerchandise * 0.05)
