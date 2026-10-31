@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["3XM6AHUVA5.com.sciencebyhugs.nexus.staging"],
+        "components": [
+          { "/": "/app/paypal/*", "comment": "PayPal app-switch return to the NEXUS iOS app" }
+        ]
+      }
+    ]
+  }
+}
