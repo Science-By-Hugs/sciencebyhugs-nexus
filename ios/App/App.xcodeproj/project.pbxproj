@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		A1C0FFEE00000000000000A3 /* PayPalPayments in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FFEE00000000000000A2 /* PayPalPayments */; };
+		A1C0FFEE00000000000000A5 /* CardPayments in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FFEE00000000000000A4 /* CardPayments */; };
 		A1C0FFEE00000000000000B2 /* NexusPayPal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE00000000000000B1 /* NexusPayPal.swift */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
@@ -40,6 +41,7 @@
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
 				A1C0FFEE00000000000000A3 /* PayPalPayments in Frameworks */,
+				A1C0FFEE00000000000000A5 /* CardPayments in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,6 +100,7 @@
 			packageProductDependencies = (
 				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
 				A1C0FFEE00000000000000A2 /* PayPalPayments */,
+				A1C0FFEE00000000000000A4 /* CardPayments */,
 			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
@@ -397,6 +400,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A1C0FFEE00000000000000A1 /* XCRemoteSwiftPackageReference "paypal-ios" */;
 			productName = PayPalPayments;
+		};
+		A1C0FFEE00000000000000A4 /* CardPayments */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1C0FFEE00000000000000A1 /* XCRemoteSwiftPackageReference "paypal-ios" */;
+			productName = CardPayments;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

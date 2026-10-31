@@ -2,6 +2,7 @@ import Foundation
 import Capacitor
 import CorePayments
 import PayPalPayments
+import CardPayments
 
 /// Native PayPal checkout for the installed NEXUS app (PayPal iOS SDK 3.1.x).
 ///
@@ -40,8 +41,8 @@ public class NexusPayPalPlugin: CAPPlugin, CAPBridgedPlugin {
         let email = (call.getString("email") ?? "").trimmingCharacters(in: .whitespaces)
         let identity = Self.isPlausibleEmail(email) ? PayPalUserIdentity(email: email, phone: nil) : nil
 
-        guard Self.isToken(clientID, maxLength: 128), Self.isToken(merchantID, maxLength: 64),
-              Self.isToken(orderID, maxLength: 64),
+        guard Self.isSafeToken(clientID, maxLength: 128), Self.isSafeToken(merchantID, maxLength: 64),
+              Self.isSafeToken(orderID, maxLength: 64),
               environmentName == "live" || environmentName == "sandbox" else {
             call.reject("PayPal checkout is not configured for this app", "invalid_request")
             return
@@ -113,8 +114,97 @@ public class NexusPayPalPlugin: CAPPlugin, CAPBridgedPlugin {
         value.count <= 254 && value.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
     }
 
-    private static func isToken(_ value: String, maxLength: Int) -> Bool {
+    static func isSafeToken(_ value: String, maxLength: Int) -> Bool {
         !value.isEmpty && value.count <= maxLength &&
             value.unicodeScalars.allSatisfy { $0.isASCII && (CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_") }
+    }
+}
+
+/// Native card checkout for the installed NEXUS app (PayPal iOS SDK CardPayments).
+///
+/// The card goes from this device straight to PayPal (confirm-payment-source); it is
+/// never sent to NEXUS servers, logged, or stored. PayPal runs 3D Secure in an
+/// ASWebAuthenticationSession when the issuer requires it. This only approves the
+/// order: card-checkout-quote then shows the final total (incl. any credit-card
+/// surcharge) and paypal-capture-order captures after checking the 3D Secure result.
+@objc(NexusCardPlugin)
+public class NexusCardPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NexusCardPlugin"
+    public let jsName = "NexusCard"
+    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "approve", returnType: CAPPluginReturnPromise)]
+
+    private var client: CardClient?
+    private var pendingCall: CAPPluginCall?
+
+    @objc func approve(_ call: CAPPluginCall) {
+        let clientID = call.getString("clientId") ?? ""
+        let merchantID = call.getString("merchantId") ?? ""
+        let orderID = call.getString("orderId") ?? ""
+        let environmentName = (call.getString("environment") ?? "").lowercased()
+        let number = (call.getString("number") ?? "").filter(\.isNumber)
+        let month = call.getString("expirationMonth") ?? ""
+        let year = call.getString("expirationYear") ?? ""
+        let securityCode = call.getString("securityCode") ?? ""
+        let name = (call.getString("cardholderName") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let postalCode = (call.getString("postalCode") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard NexusPayPalPlugin.isSafeToken(clientID, maxLength: 128), NexusPayPalPlugin.isSafeToken(merchantID, maxLength: 64),
+              NexusPayPalPlugin.isSafeToken(orderID, maxLength: 64),
+              environmentName == "live" || environmentName == "sandbox" else {
+            call.reject("Card payments are not configured for this app", "invalid_request")
+            return
+        }
+        guard (12...19).contains(number.count),
+              month.count == 2, (1...12).contains(Int(month) ?? 0),
+              year.count == 4, Int(year) != nil,
+              (3...4).contains(securityCode.count), securityCode.allSatisfy(\.isNumber),
+              name.count <= 120, postalCode.count <= 12 else {
+            call.reject("Check your card details and try again", "invalid_card")
+            return
+        }
+
+        DispatchQueue.main.async {
+            guard self.pendingCall == nil else {
+                call.reject("Card payment is already in progress", "busy")
+                return
+            }
+            let config = CoreConfig(
+                clientID: clientID,
+                environment: environmentName == "live" ? .live : .sandbox,
+                merchantID: merchantID
+            )
+            let card = Card(
+                number: number,
+                expirationMonth: month,
+                expirationYear: year,
+                securityCode: securityCode,
+                cardholderName: name.isEmpty ? nil : name,
+                billingAddress: postalCode.isEmpty ? nil : Address(postalCode: postalCode, countryCode: "US")
+            )
+            let client = CardClient(config: config)
+            self.client = client
+            self.pendingCall = call
+            client.approveOrder(request: CardRequest(orderID: orderID, card: card, sca: .scaWhenRequired)) { [weak self] result in
+                DispatchQueue.main.async { self?.finish(result) }
+            }
+        }
+    }
+
+    private func finish(_ result: Result<CardResult, CoreSDKError>) {
+        guard let call = pendingCall else { return }
+        pendingCall = nil
+        client = nil
+        switch result {
+        case .success(let approval):
+            // Approval only; the server checks 3D Secure and captures.
+            call.resolve(["status": "approved", "orderId": approval.orderID, "threeDSecureAttempted": approval.didAttemptThreeDSecureAuthentication])
+        case .failure(let error):
+            if CardError.isThreeDSecureCanceled(error) {
+                call.resolve(["status": "cancelled"])
+            } else {
+                // Never forward SDK error details; they can echo request data.
+                call.reject("Your card could not be verified. Check the details or try another card.", "card_failed")
+            }
+        }
     }
 }

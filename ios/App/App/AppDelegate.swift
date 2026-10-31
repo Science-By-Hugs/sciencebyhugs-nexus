@@ -97,6 +97,7 @@ class NexusBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NexusAppleSignInPlugin())
         bridge?.registerPluginInstance(safeAreaPlugin)
         bridge?.registerPluginInstance(NexusPayPalPlugin())
+        bridge?.registerPluginInstance(NexusCardPlugin())
         bridge?.registerPluginInstance(NexusAppInfoPlugin())
     }
 
