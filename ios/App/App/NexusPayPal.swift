@@ -20,6 +20,10 @@ public class NexusPayPalPlugin: CAPPlugin, CAPBridgedPlugin {
     /// return URLs registered for this app in the PayPal developer dashboard.
     static let returnURL = URL(string: "https://nexus.sciencebyhugs.com/app/paypal/return")!
     static let cancelURL = URL(string: "https://nexus.sciencebyhugs.com/app/paypal/cancel")!
+    /// Custom-scheme fallback (registered in Info.plist CFBundleURLTypes) used when the
+    /// universal link is not delivered to the app.
+    static let fallbackScheme = "com.sciencebyhugs.nexus.paypal"
+    static let fallbackURL = URL(string: "\(fallbackScheme)://paypal")!
 
     /// The plugin currently awaiting a PayPal return, if any.
     private static weak var active: NexusPayPalPlugin?
@@ -32,6 +36,9 @@ public class NexusPayPalPlugin: CAPPlugin, CAPBridgedPlugin {
         let merchantID = call.getString("merchantId") ?? ""
         let orderID = call.getString("orderId") ?? ""
         let environmentName = (call.getString("environment") ?? "").lowercased()
+        // Optional buyer hint: PayPal uses it (hashed by the SDK) for app-switch eligibility.
+        let email = (call.getString("email") ?? "").trimmingCharacters(in: .whitespaces)
+        let identity = Self.isPlausibleEmail(email) ? PayPalUserIdentity(email: email, phone: nil) : nil
 
         guard Self.isToken(clientID, maxLength: 128), Self.isToken(merchantID, maxLength: 64),
               Self.isToken(orderID, maxLength: 64),
@@ -55,11 +62,12 @@ public class NexusPayPalPlugin: CAPPlugin, CAPBridgedPlugin {
             self.pendingCall = call
             Self.active = self
 
-            // fallbackSchemeURL is optional: when the PayPal app is not installed the SDK
-            // uses ASWebAuthenticationSession with its own callback scheme.
+            // When the PayPal app is not installed (or app switch is not enabled for the
+            // merchant) the SDK uses ASWebAuthenticationSession with its own callback scheme.
             client.createPayPalSession(
                 sessionType: .checkout,
-                urlConfig: PayPalURLConfig(returnAppURL: Self.returnURL, cancelAppURL: Self.cancelURL, fallbackSchemeURL: nil),
+                userIdentity: identity,
+                urlConfig: PayPalURLConfig(returnAppURL: Self.returnURL, cancelAppURL: Self.cancelURL, fallbackSchemeURL: Self.fallbackURL),
                 userAction: .payNow
             )
             client.start(orderID: orderID) { [weak self] result in
@@ -88,15 +96,21 @@ public class NexusPayPalPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// Routes a PayPal app-switch return (universal link) to the in-flight checkout.
-    /// Returns true when the URL belonged to PayPal checkout.
+    /// Routes a PayPal app-switch return (universal link or custom-scheme fallback) to the
+    /// in-flight checkout. Returns true when the URL belonged to PayPal checkout.
     @discardableResult
     static func handleReturn(_ url: URL) -> Bool {
-        guard url.scheme == "https", url.host?.lowercased() == returnURL.host,
-              url.path.lowercased().hasPrefix("/app/paypal/") else { return false }
+        let scheme = url.scheme?.lowercased()
+        let isUniversalLink = scheme == "https" && url.host?.lowercased() == returnURL.host
+            && url.path.lowercased().hasPrefix("/app/paypal/")
+        guard isUniversalLink || scheme == fallbackScheme else { return false }
         guard let plugin = active, let client = plugin.client else { return true }
         DispatchQueue.main.async { client.handleReturnURL(url) }
         return true
+    }
+
+    private static func isPlausibleEmail(_ value: String) -> Bool {
+        value.count <= 254 && value.range(of: #"^[^@\s]+@[^@\s]+\.[^@\s]+$"#, options: .regularExpression) != nil
     }
 
     private static func isToken(_ value: String, maxLength: Int) -> Bool {

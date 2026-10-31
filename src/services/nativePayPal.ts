@@ -10,7 +10,7 @@ type NativeApproval =
   | { status: 'cancelled' }
 
 interface NexusPayPalPlugin {
-  checkout(options: { clientId: string; merchantId: string; environment: string; orderId: string }): Promise<NativeApproval>
+  checkout(options: { clientId: string; merchantId: string; environment: string; orderId: string; email?: string }): Promise<NativeApproval>
 }
 
 export type NativePayPalResult =
@@ -48,7 +48,11 @@ export class PaymentStatusUnknownError extends Error {
  * and an already-paid short circuit), so a lost response is retried rather than
  * starting a second purchase.
  */
-export async function payWithNativePayPal(nexusOrderId: string, deps: NativePayPalDeps = defaultDeps): Promise<NativePayPalResult> {
+export async function payWithNativePayPal(
+  nexusOrderId: string,
+  options: { email?: string | null } = {},
+  deps: NativePayPalDeps = defaultDeps,
+): Promise<NativePayPalResult> {
   const config = await deps.getConfig()
   if (!config.merchantId) throw new Error('PayPal is not configured for the app yet.')
 
@@ -58,6 +62,8 @@ export async function payWithNativePayPal(nexusOrderId: string, deps: NativePayP
     merchantId: config.merchantId,
     environment: config.environment,
     orderId: paypalOrder.orderId,
+    // Buyer hint for PayPal app-switch eligibility; the SDK hashes it before sending.
+    ...(options.email ? { email: options.email } : {}),
   })
   if (approval.status === 'cancelled') return { status: 'cancelled' }
   if (approval.orderId !== paypalOrder.orderId) {

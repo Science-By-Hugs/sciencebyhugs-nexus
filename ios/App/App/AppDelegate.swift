@@ -41,6 +41,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        if NexusPayPalPlugin.handleReturn(url) { return true }
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
@@ -64,6 +65,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard scene is UIWindowScene else { return }
         for context in connectionOptions.urlContexts {
+            if NexusPayPalPlugin.handleReturn(context.url) { continue }
             _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: context.url, options: [:])
         }
         for activity in connectionOptions.userActivities {
@@ -74,6 +76,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         for context in URLContexts {
+            if NexusPayPalPlugin.handleReturn(context.url) { continue }
             _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: context.url, options: [:])
         }
     }

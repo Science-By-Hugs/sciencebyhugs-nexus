@@ -25,25 +25,25 @@ function deps({approval={status:'approved',orderId:'PP-1',payerId:'PAYER'},captu
 
 test('approved checkout captures server-side once and returns the order number',async()=>{
  const {calls,deps:d}=deps()
- const result=await payWithNativePayPal('nexus-order',d)
+ const result=await payWithNativePayPal('nexus-order',{email:'buyer@example.com'},d)
  assert.equal(result.status,'paid');assert.equal(result.orderNumber,'SBH-1001')
  assert.deepEqual(calls.map(c=>c[0]),['create','checkout','capture'])
- assert.equal(JSON.stringify(calls[1][1]),JSON.stringify({clientId:'CLIENT',merchantId:'MERCHANT1',environment:'live',orderId:'PP-1'}))
+ assert.equal(JSON.stringify(calls[1][1]),JSON.stringify({clientId:'CLIENT',merchantId:'MERCHANT1',environment:'live',orderId:'PP-1',email:'buyer@example.com'}))
  assert.deepEqual(calls[2].slice(1),['nexus-order','PP-1','PayPal'])
 })
 test('cancelled approval never captures',async()=>{
  const {calls,deps:d}=deps({approval:{status:'cancelled'}})
- assert.equal((await payWithNativePayPal('o',d)).status,'cancelled')
+ assert.equal((await payWithNativePayPal('o',{},d)).status,'cancelled')
  assert.ok(!calls.some(c=>c[0]==='capture'))
 })
 test('approval for a different PayPal order is rejected without capture',async()=>{
  const {calls,deps:d}=deps({approval:{status:'approved',orderId:'PP-OTHER',payerId:'X'}})
- await assert.rejects(payWithNativePayPal('o',d),/different order/)
+ await assert.rejects(payWithNativePayPal('o',{},d),/different order/)
  assert.ok(!calls.some(c=>c[0]==='capture'))
 })
 test('a lost capture response is retried idempotently instead of starting a new purchase',async()=>{
  const {calls,deps:d}=deps({captures:[new Error('Failed to fetch'),{orderNumber:'SBH-2'}]})
- const result=await payWithNativePayPal('o',d)
+ const result=await payWithNativePayPal('o',{},d)
  assert.equal(result.status,'paid')
  assert.equal(calls.filter(c=>c[0]==='create').length,1)
  assert.equal(calls.filter(c=>c[0]==='checkout').length,1)
@@ -51,17 +51,17 @@ test('a lost capture response is retried idempotently instead of starting a new 
 })
 test('repeated capture failure reports unknown status and tells the customer not to pay again',async()=>{
  const {calls,deps:d}=deps({captures:[new Error('timeout')]})
- await assert.rejects(payWithNativePayPal('o',d),err=>err instanceof PaymentStatusUnknownError&&/Do not pay again/.test(err.message))
+ await assert.rejects(payWithNativePayPal('o',{},d),err=>err instanceof PaymentStatusUnknownError&&/Do not pay again/.test(err.message))
  assert.equal(calls.filter(c=>c[0]==='capture').length,3)
 })
 test('amount mismatch is not retried',async()=>{
  const {calls,deps:d}=deps({captures:[new Error('PayPal capture did not match the expected order total')]})
- await assert.rejects(payWithNativePayPal('o',d),/did not match/)
+ await assert.rejects(payWithNativePayPal('o',{},d),/did not match/)
  assert.equal(calls.filter(c=>c[0]==='capture').length,1)
 })
 test('missing merchant ID stops before any PayPal order is created',async()=>{
  const {calls,deps:d}=deps({merchantId:null})
- await assert.rejects(payWithNativePayPal('o',d),/not configured/)
+ await assert.rejects(payWithNativePayPal('o',{},d),/not configured/)
  assert.equal(calls.length,0)
 })
 test('app checkout uses the native path and the website keeps the web SDK',()=>{
@@ -73,10 +73,19 @@ test('app checkout uses the native path and the website keeps the web SDK',()=>{
 test('native shell registers PayPal, routes universal links and pins SDK 3.1.1 on iOS 16',()=>{
  const swift=fs.readFileSync(path.join(root,'ios/App/App/AppDelegate.swift'),'utf8')
  assert.match(swift,/registerPluginInstance\(NexusPayPalPlugin\(\)\)/)
- assert.equal((swift.match(/NexusPayPalPlugin\.handleReturn/g)||[]).length,3)
+ assert.equal((swift.match(/NexusPayPalPlugin\.handleReturn/g)||[]).length,6)
  const pbx=fs.readFileSync(path.join(root,'ios/App/App.xcodeproj/project.pbxproj'),'utf8')
  assert.match(pbx,/repositoryURL = "https:\/\/github\.com\/paypal\/paypal-ios";\n\t\t\trequirement = \{\n\t\t\t\tkind = exactVersion;\n\t\t\t\tversion = 3\.1\.1;/)
  assert.doesNotMatch(pbx,/IPHONEOS_DEPLOYMENT_TARGET = 15\.0/)
  const ent=fs.readFileSync(path.join(root,'ios/App/App/App.entitlements'),'utf8')
  assert.match(ent,/applinks:nexus\.sciencebyhugs\.com/)
+})
+test('app switch prerequisites: paypal query scheme, fallback scheme and buyer hint',()=>{
+ const plist=fs.readFileSync(path.join(root,'ios/App/App/Info.plist'),'utf8')
+ assert.match(plist,/<key>LSApplicationQueriesSchemes<\/key>\s*<array>\s*<string>paypal<\/string>/)
+ assert.match(plist,/<key>CFBundleURLSchemes<\/key>\s*<array>\s*<string>com\.sciencebyhugs\.nexus\.paypal<\/string>/)
+ const pp=fs.readFileSync(path.join(root,'ios/App/App/NexusPayPal.swift'),'utf8')
+ assert.match(pp,/fallbackSchemeURL: Self\.fallbackURL/)
+ assert.match(pp,/userIdentity: identity/)
+ assert.match(pp,/guard isUniversalLink \|\| scheme == fallbackScheme else \{ return false \}/)
 })

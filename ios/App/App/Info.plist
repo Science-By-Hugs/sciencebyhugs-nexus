@@ -68,5 +68,20 @@
 	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>paypal</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.sciencebyhugs.nexus.paypal</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.sciencebyhugs.nexus.paypal</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

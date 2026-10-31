@@ -1794,7 +1794,7 @@ function setupNativeCartWallets() {
     cartPayMessage.textContent = 'Opening PayPal…'
     try {
       const checkout = await ensureCheckoutOrder('PayPal')
-      const result = await payWithNativePayPal(checkout.orderId)
+      const result = await payWithNativePayPal(checkout.orderId, { email: currentProfile?.email })
       if (result.status === 'cancelled') {
         cartPayMessage.textContent = 'PayPal checkout was cancelled. You can choose another option.'
         return
@@ -2472,7 +2472,7 @@ function setupNativeOrderPayPal(paypalButtons: HTMLElement[], venmoButtons: HTML
       button.disabled = true
       if (message) message.textContent = 'Opening PayPal…'
       try {
-        const result = await payWithNativePayPal(orderId)
+        const result = await payWithNativePayPal(orderId, { email: currentProfile?.email })
         if (result.status === 'cancelled') {
           if (message) message.textContent = 'PayPal checkout was cancelled.'
           return
