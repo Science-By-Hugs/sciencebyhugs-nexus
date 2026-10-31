@@ -45,6 +45,8 @@ import { createCheckoutOrder, type CheckoutOrderResult } from './services/checko
 import { getMyOrderHistory, type NexusOrderHistory } from './services/accountHistory'
 import { capturePayPalOrder, createPayPalOrder, getPayPalSdk } from './services/paypal'
 import { payWithNativePayPal } from './services/nativePayPal'
+import { approveCard, confirmCardPayment, CardPaymentError, type CardQuote } from './services/nativeCard'
+import { cardBrandLabel, digitsOnly, formatCardNumber, formatExpiry, parseExpiry, passesLuhn, validPostalCode, validSecurityCode } from './services/cardInput'
 import { getZelleConfig, submitZellePayment } from './services/zelle'
 import { nexusPolicies } from './policies'
 import {
@@ -104,7 +106,7 @@ let currentProfile: NexusProfile | null = null
 let accountHistory: NexusOrderHistory[] = []
 let cart: CartItem[] = loadCart()
 let activeCheckoutOrder: CheckoutOrderResult | null = null
-let activeCheckoutPaymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle' | null = null
+let activeCheckoutPaymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle' | 'Card' | null = null
 let appliedDiscount: DiscountValidation | null = null
 let appliedDiscountCartSignature = ''
 const initialMode = new URLSearchParams(window.location.search).get('mode')
@@ -516,9 +518,47 @@ app.innerHTML = `
           <venmo-button id="cartVenmoButton" class="nexus-venmo-button" type="pay" hidden></venmo-button>
           <apple-pay-button id="cartApplePayButton" class="nexus-apple-pay-button" buttonstyle="black" type="buy" locale="en-US" hidden></apple-pay-button>
           <button id="cartNativePayPalButton" class="nexus-native-paypal-button" type="button" hidden>Pay with PayPal</button>
+          <button id="cartNativeCardButton" class="nexus-native-card-button" type="button" hidden>Pay with debit or credit card</button>
           <button id="cartZelleStartButton" class="zelle-submit-button" type="button" hidden>Pay with Zelle</button>
         </div>
         <p id="cartNativeWalletNote" class="cart-native-wallet-note" hidden></p>
+        <form id="cartCardForm" class="card-pay-form" autocomplete="on" novalidate hidden>
+          <div class="card-pay-head">
+            <strong>Debit or credit card</strong>
+            <button id="cartCardClose" class="card-pay-close" type="button" aria-label="Close card payment">×</button>
+          </div>
+          <p class="card-pay-disclosure">Credit cards include a surcharge of up to 3%, never more than our cost to accept the card. Debit and prepaid cards have no surcharge. You'll see your exact total before you pay.</p>
+          <label class="checkout-field card-field-wide">Card number
+            <input id="cardNumber" name="cc-number" autocomplete="cc-number" inputmode="numeric" placeholder="1234 1234 1234 1234" maxlength="23" required />
+          </label>
+          <div class="card-field-row">
+            <label class="checkout-field">Expires
+              <input id="cardExpiry" name="cc-exp" autocomplete="cc-exp" inputmode="numeric" placeholder="MM / YY" maxlength="7" required />
+            </label>
+            <label class="checkout-field">Security code
+              <input id="cardCvc" name="cc-csc" autocomplete="cc-csc" inputmode="numeric" placeholder="CVC" maxlength="4" required />
+            </label>
+          </div>
+          <label class="checkout-field card-field-wide">Name on card
+            <input id="cardName" name="cc-name" autocomplete="cc-name" maxlength="120" />
+          </label>
+          <label class="checkout-field card-field-wide">Billing ZIP code
+            <input id="cardZip" name="postal-code" autocomplete="postal-code" inputmode="numeric" placeholder="89101" maxlength="10" required />
+          </label>
+          <p id="cardFormMessage" class="card-pay-message" aria-live="polite"></p>
+          <button id="cardContinue" class="request-invoice-button" type="submit">Review total</button>
+          <p class="card-pay-fineprint">Your card goes directly to PayPal. Science By Hugs never sees or stores your card number.</p>
+        </form>
+        <section id="cartCardConfirm" class="card-pay-form" hidden>
+          <div class="card-pay-head">
+            <strong>Confirm payment</strong>
+          </div>
+          <p id="cardConfirmCard" class="card-pay-card"></p>
+          <div id="cardConfirmRows" class="card-pay-rows"></div>
+          <p id="cardConfirmMessage" class="card-pay-message" aria-live="polite"></p>
+          <button id="cardPayNow" class="request-invoice-button" type="button">Pay</button>
+          <button id="cardConfirmCancel" class="card-pay-secondary" type="button">Cancel</button>
+        </section>
         <div id="cartPayMessage" class="paypal-message" aria-live="polite"></div>
 
         <div id="cartZellePanel" class="zelle-shell" hidden>
@@ -914,6 +954,18 @@ const cartVenmoButton = document.querySelector<HTMLElement>('#cartVenmoButton')!
 const cartApplePayButton = document.querySelector<HTMLElement>('#cartApplePayButton')!
 const cartNativePayPalButton = document.querySelector<HTMLButtonElement>('#cartNativePayPalButton')!
 const cartNativeWalletNote = document.querySelector<HTMLElement>('#cartNativeWalletNote')!
+const cartNativeCardButton = document.querySelector<HTMLButtonElement>('#cartNativeCardButton')!
+const cartCardForm = document.querySelector<HTMLFormElement>('#cartCardForm')!
+const cartCardConfirm = document.querySelector<HTMLElement>('#cartCardConfirm')!
+const cardNumberInput = document.querySelector<HTMLInputElement>('#cardNumber')!
+const cardExpiryInput = document.querySelector<HTMLInputElement>('#cardExpiry')!
+const cardCvcInput = document.querySelector<HTMLInputElement>('#cardCvc')!
+const cardNameInput = document.querySelector<HTMLInputElement>('#cardName')!
+const cardZipInput = document.querySelector<HTMLInputElement>('#cardZip')!
+const cardFormMessage = document.querySelector<HTMLElement>('#cardFormMessage')!
+const cardContinueButton = document.querySelector<HTMLButtonElement>('#cardContinue')!
+const cardConfirmMessage = document.querySelector<HTMLElement>('#cardConfirmMessage')!
+const cardPayNowButton = document.querySelector<HTMLButtonElement>('#cardPayNow')!
 const cartZelleStartButton = document.querySelector<HTMLButtonElement>('#cartZelleStartButton')!
 const cartZellePanel = document.querySelector<HTMLElement>('#cartZellePanel')!
 const cartZelleDetails = document.querySelector<HTMLElement>('#cartZelleDetails')!
@@ -1714,7 +1766,7 @@ function updateRequestButton() {
   payNowButton.disabled = !policyAcknowledgment.checked || locked
 }
 
-async function ensureCheckoutOrder(paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle') {
+async function ensureCheckoutOrder(paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Zelle' | 'Card') {
   if (activeCheckoutOrder) {
     if (activeCheckoutPaymentMethod !== paymentMethod) {
       throw new Error(`This checkout was started with ${activeCheckoutPaymentMethod}. Complete that payment method before switching.`)
@@ -1755,6 +1807,7 @@ async function finishPayNow(
   copy: string,
 ) {
   const orderNumber = activeCheckoutOrder?.orderNumber || 'Pending'
+  document.querySelector<HTMLElement>('#cartFeeRow span')!.textContent = 'Processing fee (5% · PayPal, Venmo, Apple Pay)'
 
   clearCart()
   cart = []
@@ -1780,8 +1833,149 @@ async function finishPayNow(
   await refreshOrderHistory()
 }
 
+function feeLabel(paymentMethod: string | null | undefined) {
+  return paymentMethod === 'Card' ? 'Credit card surcharge' : 'Processing fee'
+}
+
+// ---- In-app card checkout (native app only) ----
+// Card number and security code live only in their inputs until handed to the native
+// PayPal plugin, and are cleared as soon as that call returns, whatever the outcome.
+let pendingCardQuote: CardQuote | null = null
+
+function clearCardSecrets() {
+  cardNumberInput.value = ''
+  cardCvcInput.value = ''
+}
+
+function closeCardCheckout(message = '') {
+  clearCardSecrets()
+  cartCardForm.hidden = true
+  cartCardConfirm.hidden = true
+  pendingCardQuote = null
+  cardFormMessage.textContent = ''
+  cardConfirmMessage.textContent = ''
+  if (message) cartPayMessage.textContent = message
+}
+
+function showCardConfirmation(quote: CardQuote) {
+  pendingCardQuote = quote
+  const t = quote.totals
+  const type = quote.card.type
+  const typeLabel = type === 'CREDIT' ? 'Credit' : type === 'DEBIT' ? 'Debit' : type === 'PREPAID' ? 'Prepaid' : ''
+  document.querySelector<HTMLElement>('#cardConfirmCard')!.textContent =
+    `${cardBrandLabel(quote.card.brand)}${quote.card.lastDigits ? ` •••• ${quote.card.lastDigits}` : ''}${typeLabel ? ` · ${typeLabel}` : ''}`
+  const row = (label: string, value: string, extra = '') =>
+    `<div class="summary-row ${extra}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`
+  document.querySelector<HTMLElement>('#cardConfirmRows')!.innerHTML = [
+    row('Subtotal', money(t.subtotal)),
+    t.discount > 0 ? row('Discount', '-' + money(t.discount)) : '',
+    row('Shipping', money(t.shipping)),
+    t.surcharge > 0 ? row('Credit card surcharge', money(t.surcharge)) : '',
+    row('Tax', money(t.tax)),
+    row('Total', money(t.total), 'total-row'),
+  ].join('')
+  cardPayNowButton.textContent = `Pay ${money(t.total)}`
+  cardConfirmMessage.textContent = t.surcharge > 0 ? '' : 'No surcharge applies to this card.'
+  // Keep the cart summary in step with the confirmed total.
+  document.querySelector<HTMLElement>('#cartFeeRow span')!.textContent = 'Credit card surcharge'
+  document.querySelector<HTMLElement>('#cartProcessingFee')!.textContent = money(t.surcharge)
+  document.querySelector<HTMLElement>('#cartTax')!.textContent = money(t.tax)
+  syncSummaryRows()
+  document.querySelector<HTMLElement>('#cartTotal')!.textContent = money(t.total)
+  cartCardForm.hidden = true
+  cartCardConfirm.hidden = false
+}
+
+function bindNativeCardCheckout() {
+  if (cartCardForm.dataset.bound) return
+  cartCardForm.dataset.bound = 'true'
+
+  cartNativeCardButton.addEventListener('click', () => {
+    cartPayMessage.textContent = ''
+    cartCardConfirm.hidden = true
+    cartCardForm.hidden = false
+    cardNumberInput.focus()
+  })
+  document.querySelector<HTMLButtonElement>('#cartCardClose')!.addEventListener('click', () => closeCardCheckout())
+  cardNumberInput.addEventListener('input', () => { cardNumberInput.value = formatCardNumber(cardNumberInput.value) })
+  cardExpiryInput.addEventListener('input', () => { cardExpiryInput.value = formatExpiry(cardExpiryInput.value) })
+  cardCvcInput.addEventListener('input', () => { cardCvcInput.value = digitsOnly(cardCvcInput.value).slice(0, 4) })
+
+  cartCardForm.addEventListener('submit', async event => {
+    event.preventDefault()
+    if (cardContinueButton.disabled) return
+    const number = digitsOnly(cardNumberInput.value)
+    const expiry = parseExpiry(cardExpiryInput.value)
+    const problem =
+      !passesLuhn(number) ? 'Check your card number.' :
+      !expiry ? 'Check the expiration date.' :
+      !validSecurityCode(cardCvcInput.value, number) ? 'Check the security code.' :
+      !validPostalCode(cardZipInput.value) ? 'Enter your 5-digit billing ZIP code.' : ''
+    if (problem || !expiry) {
+      cardFormMessage.textContent = problem
+      return
+    }
+
+    cardContinueButton.disabled = true
+    cardFormMessage.textContent = 'Verifying your card with PayPal…'
+    try {
+      const checkout = await ensureCheckoutOrder('Card')
+      const result = await approveCard(checkout.orderId, {
+        number,
+        expirationMonth: expiry.month,
+        expirationYear: expiry.year,
+        securityCode: digitsOnly(cardCvcInput.value),
+        cardholderName: cardNameInput.value.trim() || undefined,
+        postalCode: cardZipInput.value.trim(),
+      })
+      clearCardSecrets()
+      if (result.status === 'cancelled') {
+        cardFormMessage.textContent = 'Card verification was cancelled. You were not charged.'
+        return
+      }
+      cardFormMessage.textContent = ''
+      showCardConfirmation(result.quote)
+    } catch (error) {
+      clearCardSecrets()
+      cardFormMessage.textContent = error instanceof Error ? error.message : 'Your card could not be verified.'
+    } finally {
+      cardContinueButton.disabled = false
+    }
+  })
+
+  cardPayNowButton.addEventListener('click', async () => {
+    if (!pendingCardQuote || cardPayNowButton.disabled) return
+    cardPayNowButton.disabled = true
+    cardConfirmMessage.textContent = 'Processing payment…'
+    try {
+      const paid = await confirmCardPayment(pendingCardQuote)
+      if (paid.orderNumber && activeCheckoutOrder) activeCheckoutOrder.orderNumber = paid.orderNumber
+      closeCardCheckout()
+      await finishPayNow(
+        'Payment received.',
+        'Your card payment was verified and your order is now processing. Your receipt is in My Account → Order Activity.',
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Payment could not be completed.'
+      if (error instanceof CardPaymentError && error.retry) {
+        // Bank verification needs another attempt: back to the card form.
+        pendingCardQuote = null
+        cartCardConfirm.hidden = true
+        cartCardForm.hidden = false
+        cardFormMessage.textContent = message
+      } else {
+        cardConfirmMessage.textContent = message
+      }
+    } finally {
+      cardPayNowButton.disabled = false
+    }
+  })
+  document.querySelector<HTMLButtonElement>('#cardConfirmCancel')!
+    .addEventListener('click', () => closeCardCheckout('Card payment cancelled. You were not charged.'))
+}
+
 const NATIVE_WALLET_NOTE =
-  'Venmo and Apple Pay are not available in the app yet. Use PayPal or Zelle here, or pay with Venmo or Apple Pay at nexus.sciencebyhugs.com in Safari.'
+  'Venmo and Apple Pay are not available in the app yet. Use PayPal, a debit or credit card, or Zelle here, or pay with Venmo or Apple Pay at nexus.sciencebyhugs.com in Safari.'
 
 function nativePayPalFailureMessage(error: unknown) {
   return error instanceof Error ? error.message : 'PayPal checkout could not be completed.'
@@ -1792,6 +1986,8 @@ function setupNativeCartWallets() {
   cartVenmoButton.hidden = true
   cartApplePayButton.hidden = true
   cartNativePayPalButton.hidden = false
+  cartNativeCardButton.hidden = false
+  bindNativeCardCheckout()
   cartNativeWalletNote.hidden = false
   cartNativeWalletNote.textContent = NATIVE_WALLET_NOTE
   if (cartNativePayPalButton.dataset.bound) return
@@ -2236,7 +2432,7 @@ function openReceipt(order: NexusOrderHistory) {
         ${row('Subtotal', money(order.subtotal))}
         ${discount > 0 ? row('Discount' + (order.discount_code ? ' (' + order.discount_code + ')' : ''), '-' + money(discount)) : ''}
         ${row('Shipping', money(order.shipping_total))}
-        ${order.processing_fee_total > 0 ? row('Processing fee', money(order.processing_fee_total)) : ''}
+        ${order.processing_fee_total > 0 ? row(feeLabel(order.payment_method), money(order.processing_fee_total)) : ''}
         ${row('Tax', money(order.tax_total))}
         ${row('Total paid', money(order.total), 'receipt-grand')}
       </section>
@@ -2349,7 +2545,7 @@ function renderAccountHistory() {
         ` : ''}
         ${order.processing_fee_total > 0 ? `
           <div class="history-total">
-            <span>PayPal/Venmo Processing Fee</span>
+            <span>${escapeHtml(feeLabel(order.payment_method))}</span>
             <strong>${money(order.processing_fee_total)}</strong>
           </div>
         ` : ''}

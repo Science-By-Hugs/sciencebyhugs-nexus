@@ -104,7 +104,7 @@ export async function getPayPalSdk() {
 
 export async function createPayPalOrder(
   orderId: string,
-  paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' = 'PayPal',
+  paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Card' = 'PayPal',
 ) {
   const { data, error } = await supabase.functions.invoke('paypal-create-order', {
     body: { orderId, paymentMethod },
@@ -125,7 +125,7 @@ export async function createPayPalOrder(
 export async function capturePayPalOrder(
   orderId: string,
   paypalOrderId: string,
-  paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' = 'PayPal',
+  paymentMethod: 'PayPal' | 'Venmo' | 'Apple Pay' | 'Card' = 'PayPal',
 ) {
   const { data, error } = await supabase.functions.invoke('paypal-capture-order', {
     body: { orderId, paypalOrderId, paymentMethod },

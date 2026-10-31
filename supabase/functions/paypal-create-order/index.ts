@@ -138,7 +138,10 @@ Deno.serve(async (req: Request) => {
     .eq("order_id", order.id)
     .maybeSingle();
 
+  // A card attempt is tied to the card entered for it, so every card attempt gets a
+  // fresh PayPal order; an abandoned or failed one expires without charging anything.
   if (
+    provider !== "Card" &&
     existingPayment?.provider === provider &&
     existingPayment?.provider_order_id &&
     ["paypal_created", "venmo_created", "applepay_created", "card_created", "submitted"].includes(String(existingPayment.status))
@@ -159,7 +162,9 @@ Deno.serve(async (req: Request) => {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
-      "PayPal-Request-Id": `sbh-create-${order.id}-${provider.toLowerCase()}`,
+      "PayPal-Request-Id": provider === "Card"
+        ? `sbh-create-${order.id}-card-${crypto.randomUUID()}`
+        : `sbh-create-${order.id}-${provider.toLowerCase()}`,
     },
     body: JSON.stringify({
       intent: "CAPTURE",

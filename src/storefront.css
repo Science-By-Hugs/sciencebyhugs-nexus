@@ -323,3 +323,20 @@ body.native-app dialog.receipt-overlay {
 .nexus-native-paypal-button {display:block;width:100%;min-height:50px;border:0;border-radius:14px;background:#FFC439;color:#111;font-size:17px;font-weight:700;letter-spacing:0}
 .nexus-native-paypal-button:disabled {opacity:.6;cursor:wait;color:#111}
 .cart-native-wallet-note {margin:10px 0 0;font-size:13px;line-height:18px;color:var(--muted)}
+
+/* In-app card checkout (native app). Slate: flat, dark, grouped like the cart summary. */
+.nexus-native-card-button {display:block;width:100%;min-height:50px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);font-size:17px;font-weight:600}
+.nexus-native-card-button:disabled {opacity:.6}
+.card-pay-form {margin-top:14px;padding:16px;border-radius:14px;background:var(--surface);display:flex;flex-direction:column;gap:12px}
+.card-pay-head {display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-pay-head strong {font-size:17px;font-weight:600;color:var(--text)}
+.card-pay-close {width:30px;height:30px;min-width:30px;min-height:30px;padding:0;border:0;border-radius:15px;background:var(--bg);color:var(--muted);font-size:20px;line-height:1}
+.card-pay-disclosure,.card-pay-fineprint {margin:0;font-size:13px;line-height:18px;color:var(--muted)}
+.card-pay-form .checkout-field {display:flex;flex-direction:column;gap:6px;margin:0;color:var(--muted)}
+.card-pay-form .checkout-field input {width:100%;box-sizing:border-box;min-height:46px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font-size:17px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.card-pay-form .checkout-field input:focus {border-color:var(--text);outline:none}
+.card-field-row {display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card-pay-message {min-height:18px;margin:0;font-size:14px;line-height:19px;color:var(--text)}
+.card-pay-card {margin:0;font-size:15px;color:var(--text)}
+.card-pay-rows {display:flex;flex-direction:column}
+.card-pay-secondary {min-height:44px;border:0;background:transparent;color:var(--muted);font-size:15px}
