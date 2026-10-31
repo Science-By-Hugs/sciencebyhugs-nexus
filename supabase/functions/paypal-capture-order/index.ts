@@ -256,7 +256,11 @@ Deno.serve(async (req: Request) => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "PayPal-Request-Id": `sbh-capture-${order.id}`,
+        // Each card attempt is its own PayPal order, so key captures per PayPal order
+        // (a retry with a new card must not replay the first card's decline).
+        "PayPal-Request-Id": provider === "Card"
+          ? `sbh-capture-${order.id}-${paypalOrderId}`
+          : `sbh-capture-${order.id}`,
       },
       body: "{}",
     },
