@@ -62,22 +62,22 @@ export function productImageMarkup(product: ImageProduct, baseUrl: string, class
   }
   const label = productLabel(product)
   const lines = nameLines(label.name)
-  const name = lines.map((line, i) => textLine(line, lines.length === 1 ? 663 : lines.length === 2 ? 620 + i * 61 : 594 + i * 48, lines.length === 1 ? 79 : lines.length === 2 ? 55 : 44)).join('')
+  const name = lines.map((line, i) => textLine(line, lines.length === 1 ? 663 : lines.length === 2 ? 620 + i * 61 : 594 + i * 48, lines.length === 1 ? 79 : lines.length === 2 ? 55 : 44, 900)).join('')
   const strength = label.strength
-    ? `<rect x="474" y="700" width="306" height="78" fill="#121516"/>${textLine(label.strength, 756, 48, 700, 274).replace('<text ', '<text fill="#fff" ')}`
+    ? `<rect x="474" y="700" width="306" height="78" fill="#000"/>${textLine(label.strength, 756, 48, 900, 274).replace('<text ', '<text fill="#fff" ')}`
     : ''
   const photo = label.kind === 'supply'
     ? `<rect width="1254" height="1254" fill="#202529"/><rect x="350" y="300" width="554" height="715" rx="30" fill="#e8e8e5"/><path d="M350 425h554M627 300v125" stroke="#b8bec0" stroke-width="6"/>`
     : `<image href="${escape(baseUrl)}products/vial-${label.kind}.webp" width="1254" height="1254"/>`
   return `<svg class="personalized-product-image ${escape(className)}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-label="${escape(product.name)} — illustrated product image" focusable="false">
     ${photo}
-    <g font-family="Arial, Helvetica, sans-serif" fill="#111516">
+    <g font-family="Arial, Helvetica, sans-serif" fill="#000">
       <rect x="397" y="486" width="460" height="429" rx="20" fill="none" stroke="#171b1d" stroke-width="3"/>
       <path d="M411 530h88M755 530h88M411 850h432" stroke="#688da1" stroke-width="5"/>
-      ${textLine('SCIENCE BY HUGS', 542, 29, 600, 239)}
+      ${textLine('SCIENCE BY HUGS', 542, 29, 800, 239)}
       ${name}${strength}
-      ${textLine(label.descriptor, label.strength ? 826 : 805, 31, 500)}
-      ${textLine(label.kind === 'supply' ? 'SCIENCE BY HUGS' : 'FOR RESEARCH USE ONLY', 891, 25, 500)}
+      ${textLine(label.descriptor, label.strength ? 826 : 805, 31, 700)}
+      ${textLine(label.kind === 'supply' ? 'SCIENCE BY HUGS' : 'FOR RESEARCH USE ONLY', 891, 25, 700)}
     </g>
   </svg>`
 }
