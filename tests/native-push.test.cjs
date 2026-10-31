@@ -86,6 +86,8 @@ test('APNs credentials come only from secrets and full tokens are never logged',
 test('dispatcher sends queued NEXUS events to native devices without double delivery',()=>{
  const dispatch=read('supabase/functions/app-push/index.ts')
  assert.match(dispatch,/event\.app === 'nexus' && apnsConfig\(\)\.configured/)
+ assert.match(dispatch,/if \(nativeDevices\.length && isAppleWebPush\(sub\.endpoint\)\) \{/)
+ assert.match(dispatch,/hostname\.endsWith\('\.push\.apple\.com'\)/)
  assert.match(dispatch,/delivered_endpoints \|\| \[\]\)\.includes\(device\.id\)/)
  assert.match(dispatch,/invalidToken\) await sql`update public\.native_push_devices set invalidated_at=now\(\)/)
  assert.match(dispatch,/keys\.nexus_rotation_20261023/)
@@ -96,4 +98,11 @@ test('migration keeps device tokens unreadable by clients and queues native-only
  assert.match(m,/revoke all on public\.native_push_devices from anon, authenticated;/)
  assert.doesNotMatch(m,/create policy[\s\S]*native_push_devices/i)
  assert.match(m,/or exists \(select 1 from public\.native_push_devices d where d\.app='nexus' and d\.user_id=customer_auth and d\.invalidated_at is null\)/)
+})
+test('customer order alerts: internal steps silent, milestones name the order, repeats dropped',()=>{
+ const m=read('supabase/migrations/20261031150000_customer_order_push_tightening.sql')
+ assert.match(m,/internal_statuses text\[\] := array\['checkout_pending', 'checkout_error'\]/)
+ assert.match(m,/if old_status = 'checkout_pending' and new_status = 'processing' then return null; end if;/)
+ assert.match(m,/q\.payload->>'body' = nexus_body\n\s+and q\.created_at > now\(\) - interval '10 minutes'/)
+ assert.match(m,/'CORE · Order alert'/)
 })

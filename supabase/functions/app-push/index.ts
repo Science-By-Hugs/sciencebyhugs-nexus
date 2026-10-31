@@ -8,6 +8,9 @@ import { apnsConfig, sendApns } from '../_shared/apns.ts'
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' }
 const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}')
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, keys.nexus_rotation_20261023 || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+const isAppleWebPush = (endpoint: string) => {
+  try { return new URL(endpoint).hostname.endsWith('.push.apple.com') } catch { return false }
+}
 function createHandler(sql: any) {
 
 async function dispatch() {
@@ -28,9 +31,19 @@ async function dispatch() {
       if (!users.length) { await sql`update private.app_push_queue set delivered_at=now() where id=${event.id}`; continue }
     }
     const subscriptions=await sql`select * from public.app_push_subscriptions where user_id=${event.user_id} and app=${event.app}`
+    // A NEXUS customer with the native iPhone app gets the APNs copy only: their
+    // Apple web-push subscriptions (Home Screen / Safari) would show the same alert twice.
+    const nativeDevices = event.app === 'nexus' && apnsConfig().configured
+      ? await sql`select id, token, apns_environment from public.native_push_devices
+          where user_id=${event.user_id} and app='nexus' and invalidated_at is null`
+      : []
     let failed = false
     for (const sub of subscriptions || []) {
       if ((event.delivered_endpoints || []).includes(sub.id)) continue
+      if (nativeDevices.length && isAppleWebPush(sub.endpoint)) {
+        await sql`update private.app_push_queue set delivered_endpoints=array_append(delivered_endpoints,${sub.id}::uuid) where id=${event.id}`
+        continue
+      }
       try {
         if (await deliver(admin, 'app_push_subscriptions', sub, event.payload, sql)) sent++
         await sql`update private.app_push_queue set delivered_endpoints=array_append(delivered_endpoints,${sub.id}::uuid) where id=${event.id}`
@@ -38,10 +51,8 @@ async function dispatch() {
     }
     // Native iPhone (APNs) devices for NEXUS customers. Each device id is recorded in
     // delivered_endpoints like a web subscription, so a retried event never re-sends.
-    if (event.app === 'nexus' && apnsConfig().configured) {
-      const devices = await sql`select id, token, apns_environment from public.native_push_devices
-        where user_id=${event.user_id} and app='nexus' and invalidated_at is null`
-      for (const device of devices) {
+    if (nativeDevices.length) {
+      for (const device of nativeDevices) {
         if ((event.delivered_endpoints || []).includes(device.id)) continue
         // A signing/config error is contained to this device so web pushes in the batch still go out.
         const result = await sendApns(device, event.payload).catch(() => ({ ok: false as const, status: 0, reason: 'SendError', invalidToken: false }))
