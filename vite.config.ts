@@ -24,7 +24,7 @@ export default defineConfig({
         skipWaiting: true,
         navigateFallbackDenylist: [/\.vcf$/i],
       },
-      includeAssets: ['brand/science-by-hugs.svg', 'brand/sbh-monogram.svg', 'brand/nexus.svg', 'brand/nexus-app-icon.svg', 'brand/nexus-touch-icon.png', 'brand/nexus-icon-192.png', 'brand/nexus-icon-512.png', 'default-product-vial-slate.webp', 'science-by-hugs-contact.vcf'],
+      includeAssets: ['brand/science-by-hugs.svg', 'brand/sbh-monogram.svg', 'brand/nexus.svg', 'brand/nexus-app-icon.svg', 'brand/nexus-touch-icon.png', 'brand/nexus-icon-192.png', 'brand/nexus-icon-512.png', 'default-product-vial-slate.webp', 'products/vial-powder.webp', 'products/vial-liquid.webp', 'science-by-hugs-contact.vcf'],
       manifest: {
         name: 'Science By Hugs Nexus',
         short_name: 'Nexus',

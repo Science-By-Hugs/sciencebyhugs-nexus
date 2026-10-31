@@ -340,3 +340,47 @@ body.native-app dialog.receipt-overlay {
 .card-pay-card {margin:0;font-size:15px;color:var(--text)}
 .card-pay-rows {display:flex;flex-direction:column}
 .card-pay-secondary {min-height:44px;border:0;background:transparent;color:var(--muted);font-size:15px}
+
+/* Shared photographed vial + vector label: the same artwork in grid, detail and cart. */
+.product-image > .personalized-product-image,
+.dialog-image > .personalized-product-image {
+  display:block;width:100%;height:100%;min-width:0;background:#202529;
+}
+.personalized-product-image.cart-added-thumb {display:block;flex-shrink:0}
+
+/* One continuous photographic card: artwork sits behind the details rather than
+   ending at a separate, solid product-body panel. Keep the complete vial visible. */
+.product-card {
+  position:relative;
+  isolation:isolate;
+  background:#171d21;
+}
+.product-card > .product-image {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  aspect-ratio:auto;
+  display:block;
+  border-radius:0;
+  background:#171d21;
+}
+.product-card > .product-image > :is(.personalized-product-image,img:not(.fallback-mark)) {
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:1;
+  object-fit:contain;
+  background:transparent;
+  mask-image:linear-gradient(to bottom,#000 79%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,#000 79%,transparent 100%);
+}
+.product-card > .product-body {
+  position:relative;
+  z-index:1;
+  margin-top:88%;
+  background:linear-gradient(to bottom,transparent,#171d21 68px);
+}
+.product-card .featured {
+  z-index:2;
+}

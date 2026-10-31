@@ -1,3 +1,4 @@
+import { productImageMarkup } from './productImage'
 import { marketingFields, marketingPanel, bindMarketing, saveMarketing, readMarketing } from './marketing'
 import { avatarMarkup, avatarPanel, bindAvatars } from './avatar'
 import { pushPanel, pushPrompt, bindPushPanel, disablePush, installNativePushHandlers, refreshNativePushToken } from './push'
@@ -100,6 +101,13 @@ showLaunchLoader()
 if (!app) throw new Error('App root not found')
 
 let products: CatalogProduct[] = []
+// Failed custom uploads use the same personalized artwork as missing photos.
+document.addEventListener('error', event => {
+  const image = event.target
+  if (!(image instanceof HTMLImageElement) || !image.dataset.catalogPhoto) return
+  const product = products.find(item => item.id === image.dataset.catalogPhoto)
+  if (product) image.outerHTML = productImageMarkup({ ...product, image_url: null }, import.meta.env.BASE_URL, image.className, false)
+}, true)
 let selectedCategory = 'All'
 let query = ''
 let currentProfile: NexusProfile | null = null
@@ -991,7 +999,7 @@ function showAddedToCart(product: CatalogProduct) {
   banner.className = 'cart-added'
   banner.setAttribute('role', 'status')
   banner.innerHTML = `
-    <img class="cart-added-thumb" src="${escapeHtml(product.image_url || defaultProductImageUrl)}" alt="" />
+    ${productImageMarkup(product, import.meta.env.BASE_URL, 'cart-added-thumb', false)}
     <span class="cart-added-copy">
       <small><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Added to cart</small>
       <strong>${escapeHtml(product.name)}</strong>
@@ -1502,9 +1510,7 @@ function renderProducts() {
     return `
       <article class="product-card" data-id="${product.id}">
         <div class="product-image">
-          ${product.image_url
-            ? `<img src="${escapeHtml(product.image_url)}" alt="" loading="lazy" />`
-            : `<img src="${defaultProductImageUrl}" alt="Science By Hugs research vial" loading="lazy" class="default-product-image" />`}
+          ${productImageMarkup(product, import.meta.env.BASE_URL)}
           ${product.featured ? '<span class="featured">FEATURED</span>' : ''}
         </div>
         <div class="product-body">
@@ -1555,9 +1561,7 @@ function openProduct(id: string) {
 
   dialogContent.innerHTML = `
     <div class="dialog-image">
-      ${product.image_url
-        ? `<img src="${escapeHtml(product.image_url)}" alt="" />`
-        : `<img src="${defaultProductImageUrl}" alt="Science By Hugs research vial" class="default-product-image" />`}
+      ${productImageMarkup(product, import.meta.env.BASE_URL, '', false)}
     </div>
     <span class="category">${escapeHtml(category)}</span>
     <h2>${escapeHtml(product.name)}</h2>
