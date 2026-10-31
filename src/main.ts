@@ -66,16 +66,20 @@ if (isNativeApp) installNativeViewport()
 // Notification taps open Order Activity for whoever is signed in on this device;
 // the notification itself carries no order data. Before sign-in, the request is
 // kept in the URL and handled by refreshAccount once the session loads.
-if (isNativeApp) installNativePushHandlers(() => {
+let pendingPushRoute: 'orders' | null = null
+if (isNativeApp) installNativePushHandlers(route => {
   if (currentProfile) {
-    if (!accountDialog.open) accountDialog.showModal()
-    showOrderActivity()
+    openPushRoute(route)
     return
   }
-  const pending = new URL(location.href)
-  pending.searchParams.set('push', 'orders')
-  history.replaceState(null, '', pending)
+  // Session still loading (cold launch): refreshAccount applies it once signed in.
+  pendingPushRoute = route
 })
+
+function openPushRoute(_route: 'orders') {
+  if (!accountDialog.open) accountDialog.showModal()
+  showOrderActivity()
+}
 
 if (!isNativeApp) {
   registerSW({
@@ -1027,9 +1031,13 @@ document.querySelector('#myDiscountCodesList')?.addEventListener('click', async 
   else showToast('Code ready. Add products to your cart to use it.')
 })
 
-function showAccountHub() {
+function refreshAccountHubData() {
   void bindAvatars([currentProfile?.first_name, currentProfile?.last_name].filter(Boolean).join(' '), true)
   void renderMyDiscountCodes()
+}
+
+function showAccountHub() {
+  refreshAccountHubData()
   accountHubView.hidden = false
   accountManageView.hidden = true
   accountOrdersView.hidden = true
@@ -2757,6 +2765,12 @@ async function refreshAccount() {
     accountButton.textContent = 'Account'
     signedOutView.hidden = false
     signedInView.hidden = true
+    // The next customer to sign in starts on the hub, never on a previous
+    // customer's Order Activity or Manage Account page.
+    accountHubView.hidden = false
+    accountManageView.hidden = true
+    accountOrdersView.hidden = true
+    pendingPushRoute = null
     accountHistory = []
     renderAccountHistory()
     updateCheckoutCustomer()
@@ -2794,13 +2808,23 @@ async function refreshAccount() {
   manageLastName.value = currentProfile?.last_name || ''
   managePhone.value = currentProfile?.phone || ''
   manageEmail.value = currentProfile?.email || user.email || ''
-  showAccountHub()
+  // refreshAccount also runs on routine session refreshes (e.g. when the app
+  // resumes). Do not yank a signed-in customer out of Order Activity or Manage
+  // Account (or undo a notification tap that just opened Order Activity).
+  const viewingAccountSubpage = accountDialog.open && (!accountOrdersView.hidden || !accountManageView.hidden)
+  if (viewingAccountSubpage) {
+    refreshAccountHubData()
+    if (!accountOrdersView.hidden) void refreshOrderHistory()
+  } else showAccountHub()
   const pushUrl = new URL(location.href)
-  if (pushUrl.searchParams.get('push') === 'orders') {
+  const webPushRoute = pushUrl.searchParams.get('push') === 'orders'
+  if (webPushRoute) {
     pushUrl.searchParams.delete('push')
     history.replaceState(null, '', pushUrl)
-    if (!accountDialog.open) accountDialog.showModal()
-    showOrderActivity()
+  }
+  if (webPushRoute || pendingPushRoute === 'orders') {
+    pendingPushRoute = null
+    openPushRoute('orders')
   }
   void refreshNativePushToken()
   updateCheckoutCustomer()
