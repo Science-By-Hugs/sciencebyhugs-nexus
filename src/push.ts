@@ -127,7 +127,7 @@ export async function enablePush() {
     if (permission.receive === 'prompt' || permission.receive === 'prompt-with-rationale') {
       permission = await PushNotifications.requestPermissions()
     }
-    if (permission.receive !== 'granted') throw new Error('Notifications are blocked. Allow them in iPhone Settings > Notifications > NEXUS Staging.')
+    if (permission.receive !== 'granted') throw new Error('Notifications are blocked. Allow them in iPhone Settings > Notifications > Nexus by SBH.')
     const token = await registerNativeToken()
     await api('native-subscribe', undefined, token)
     saveNativeToken(token)
